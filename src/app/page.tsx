@@ -1,65 +1,157 @@
-import Image from "next/image";
+import Link from "next/link";
+import GigCard from "@/components/GigCard";
+import FreelancerCard from "@/components/FreelancerCard";
+import { gigs, freelancers, categories } from "@/lib/mock";
 
-export default function Home() {
+export default function HomePage() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <div>
+      <section className="mx-auto w-full max-w-7xl px-3 sm:px-4 md:px-6 lg:px-8 pt-4 sm:pt-6 md:pt-8 lg:pt-10 pb-6 md:pb-8">
+        <div className="grid gap-4 sm:gap-6 lg:grid-cols-2 lg:items-center">
+          <div>
+            <div className="inline-flex items-center gap-2 rounded-full border bg-white px-3 py-1 text-xs font-semibold text-black/70">
+              🎓 Mahasiswa • Konsultasi • Semua lewat chat
+            </div>
+
+            {/* ✅ Ukuran judul mobile lebih pas */}
+            <h1 className="mt-3 sm:mt-4 text-2xl sm:text-3xl md:text-4xl lg:text-5xl leading-tight sm:leading-[1.2] font-extrabold">
+              Bereskan skripsi lebih terarah dengan{" "}
+              <span className="underline decoration-black/20">
+                pendampingan & mentoring
+              </span>
+              .
+            </h1>
+
+            <p className="mt-2 sm:mt-3 text-xs sm:text-sm md:text-base text-black/60 max-w-xl leading-relaxed">
+              Metodologi, olah data (dibimbing), revisi sesuai catatan dosen,
+              proofreading, sitasi, dan PPT sidang.
+            </p>
+
+            {/* ✅ Tombol full-width di mobile */}
+            <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <Link
+                href="/search"
+                className="h-11 rounded-2xl bg-black px-6 text-center text-sm font-semibold text-white leading-[44px]"
+              >
+                Cari Layanan
+              </Link>
+              <Link
+                href="/dashboard"
+                className="h-11 rounded-2xl border bg-white px-6 text-center text-sm font-semibold hover:bg-black/5 leading-[44px]"
+              >
+                Jadi Mentor
+              </Link>
+            </div>
+
+            <div className="mt-5 flex flex-wrap gap-2">
+              {categories.slice(0, 7).map((c) => (
+                <Link
+                  key={c}
+                  href={`/search?cat=${encodeURIComponent(c)}`}
+                  className="rounded-full border bg-white px-3 py-2 text-xs font-semibold text-black/70 hover:bg-black/5"
+                >
+                  {c}
+                </Link>
+              ))}
+            </div>
+
+            <div className="mt-5 rounded-2xl border bg-white p-4 text-xs sm:text-sm text-black/60">
+              <b className="text-black">Catatan:</b> layanan fokus pendampingan
+              & perbaikan naskah milikmu (bukan menggantikan kamu mengerjakan).
+            </div>
+          </div>
+
+          {/* ✅ Card kanan: biar di mobile nggak "kekecilan" */}
+          <div className="rounded-2xl sm:rounded-3xl border bg-white p-4 sm:p-5 md:p-6 shadow-sm">
+            <div className="grid gap-3">
+              <div className="rounded-xl sm:rounded-2xl bg-black p-4 sm:p-5 text-white">
+                <div className="text-xs sm:text-sm font-semibold text-white/70">
+                  Sesi berjalan
+                </div>
+                <div className="mt-1 text-lg sm:text-xl font-extrabold">
+                  Olah Data (Bimbingan)
+                </div>
+                <div className="mt-3 flex items-center justify-between text-sm">
+                  <span className="text-white/70">Status</span>
+                  <span className="rounded-full bg-white/15 px-3 py-1 font-semibold">
+                    In Progress
+                  </span>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3">
+                {[
+                  { k: "Mentor", v: "1.2K+" },
+                  { k: "Layanan", v: "6.4K+" },
+                  { k: "Rating", v: "4.8" },
+                ].map((x) => (
+                  <div key={x.k} className="rounded-lg sm:rounded-2xl border bg-white p-3 sm:p-4">
+                    <div className="text-[11px] sm:text-xs font-semibold text-black/50">
+                      {x.k}
+                    </div>
+                    <div className="mt-1 text-base sm:text-lg font-extrabold">{x.v}</div>
+                  </div>
+                ))}
+              </div>
+
+              <Link
+                href="/chat/1"
+                className="h-10 sm:h-11 rounded-lg sm:rounded-xl bg-black px-3 sm:px-4 text-center text-xs sm:text-sm font-semibold text-white leading-10 sm:leading-[44px]"
+              >
+                Lihat Contoh Chat
+              </Link>
+            </div>
+          </div>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+      </section>
+
+      <section className="mx-auto w-full max-w-7xl px-3 sm:px-4 md:px-6 lg:px-8 py-6 sm:py-8 md:py-10">
+        <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-2 sm:gap-3">
+          <div>
+            <h2 className="text-xl sm:text-2xl font-extrabold">Layanan Populer</h2>
+            <p className="mt-1 text-xs sm:text-sm text-black/60">
+              Pendampingan yang paling sering dipakai mahasiswa.
+            </p>
+          </div>
+          <Link
+            href="/search"
+            className="rounded-xl border bg-white px-4 py-2 text-sm font-semibold hover:bg-black/5"
           >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+            Lihat semua
+          </Link>
         </div>
-      </main>
+
+        <div className="mt-4 sm:mt-6 grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+          {gigs.slice(0, 8).map((g) => (
+            <GigCard key={g.id} gig={g} />
+          ))}
+        </div>
+      </section>
+
+      <section className="mx-auto w-full max-w-7xl px-3 sm:px-4 md:px-6 lg:px-8 pb-8 sm:pb-10 md:pb-12">
+        <div className="rounded-2xl sm:rounded-3xl border bg-white p-4 sm:p-6 md:p-8">
+          <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-2 md:gap-3">
+            <div>
+              <h2 className="text-xl sm:text-2xl font-extrabold">Mentor Terbaik</h2>
+              <p className="mt-1 text-xs sm:text-sm text-black/60">
+                Pilih mentor sesuai kebutuhan skripsimu.
+              </p>
+            </div>
+            <Link
+              href="/search"
+              className="rounded-lg sm:rounded-xl bg-black px-3 sm:px-4 py-2 text-xs sm:text-sm font-semibold text-white text-center"
+            >
+              Cari Mentor
+            </Link>
+          </div>
+
+          <div className="mt-4 sm:mt-6 grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+            {freelancers.map((f) => (
+              <FreelancerCard key={f.id} f={f} />
+            ))}
+          </div>
+        </div>
+      </section>
     </div>
   );
 }
