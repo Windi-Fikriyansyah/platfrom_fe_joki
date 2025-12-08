@@ -11,7 +11,9 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     // allow public routes: root, search, and auth pages
     const publicPrefixes = ["/", "/search", "/auth"];
-    if (publicPrefixes.some((p) => pathname === p || pathname.startsWith(p + "/"))) {
+    if (
+      publicPrefixes.some((p) => pathname === p || pathname.startsWith(p + "/"))
+    ) {
       setReady(true);
       return;
     }

@@ -10,7 +10,11 @@ type ToastType = "success" | "danger" | "info";
  * so existing code doesn't need changes. Under the hood it uses `sonner`.
  */
 export function useToast() {
-  function showToast(message: string, type: ToastType = "info", duration = 4000) {
+  function showToast(
+    message: string,
+    type: ToastType = "info",
+    duration = 4000
+  ) {
     if (type === "success") {
       sonnerToast.success(message, { duration });
     } else if (type === "danger") {
@@ -26,7 +30,11 @@ export function useToast() {
  * ToastProvider renders Sonner's Toaster and passes through children.
  * Make sure `sonner` is installed: `npm i sonner` or `pnpm add sonner`.
  */
-export default function ToastProvider({ children }: { children: React.ReactNode }) {
+export default function ToastProvider({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <>
       {children}
