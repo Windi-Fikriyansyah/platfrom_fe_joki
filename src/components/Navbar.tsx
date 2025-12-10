@@ -152,12 +152,18 @@ export default function Navbar() {
             >
               <Bell className="w-6 h-6 text-foreground" strokeWidth={2} />
             </Link>
-            <Link
-              href="/freelancer/register"
+            <button
+              onClick={() => {
+                if (isLoggedIn) router.push("/start-selling");
+                else
+                  router.push(
+                    `/auth/login?next=${encodeURIComponent("/start-selling")}`
+                  );
+              }}
               className="rounded-lg lg:rounded-xl px-2 lg:px-3 py-1.5 lg:py-2 text-xs lg:text-sm font-semibold hover:bg-black/5"
             >
               Daftar Freelancer
-            </Link>
+            </button>
 
             {/* LOGIN / AKUN */}
             {isLoggedIn ? (
@@ -196,12 +202,21 @@ export default function Navbar() {
                       Chat
                     </Link>
 
-                    <Link
-                      href="/freelancer/register"
-                      className="block px-3 py-2 text-sm hover:bg-black/5"
+                    <button
+                      onClick={() => {
+                        if (isLoggedIn) router.push("/start-selling");
+                        else
+                          router.push(
+                            `/auth/login?next=${encodeURIComponent(
+                              "/start-selling"
+                            )}`
+                          );
+                        setAccountOpen(false);
+                      }}
+                      className="block w-full text-left px-3 py-2 text-sm hover:bg-black/5"
                     >
                       Daftar Freelancer
-                    </Link>
+                    </button>
 
                     <button
                       onClick={handleLogout}
@@ -295,13 +310,21 @@ export default function Navbar() {
                   Chat
                 </Link>
 
-                <Link
-                  href="/freelancer/register"
-                  onClick={() => setOpen(false)}
+                <button
+                  onClick={() => {
+                    setOpen(false);
+                    if (isLoggedIn) router.push("/start-selling");
+                    else
+                      router.push(
+                        `/auth/login?next=${encodeURIComponent(
+                          "/start-selling"
+                        )}`
+                      );
+                  }}
                   className="col-span-2 btn-mobile"
                 >
                   Daftar Freelancer
-                </Link>
+                </button>
 
                 {isLoggedIn ? (
                   <button

@@ -260,12 +260,28 @@ export default function RegisterPage() {
           <div className="flex-1 h-px bg-black/10" />
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
-          <button className="h-10 rounded-lg border bg-white hover:bg-black/5 font-semibold">
-            Google
-          </button>
-          <button className="h-10 rounded-lg border bg-white hover:bg-black/5 font-semibold">
-            GitHub
+        <div className="">
+          <button
+            type="button"
+            onClick={() => {
+              const api = process.env.NEXT_PUBLIC_API_BASE_URL || "";
+              window.location.href = `${api}/auth/google/start`;
+            }}
+            className="w-full h-10 rounded-lg border bg-white hover:bg-black/5 font-semibold inline-flex items-center justify-center gap-3"
+          >
+            <svg
+              className="w-5 h-5"
+              viewBox="0 0 24 24"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+              aria-hidden
+            >
+              <path
+                d="M21.35 11.1h-9.18v2.92h5.26c-.23 1.4-1.45 4.11-5.26 4.11-3.17 0-5.75-2.62-5.75-5.84s2.58-5.84 5.75-5.84c1.8 0 3.01.77 3.7 1.43l2.52-2.43C17.1 3.2 15.28 2.3 12.17 2.3 7.1 2.3 3 6.34 3 11.26s4.1 8.96 9.17 8.96c5.29 0 8.8-3.8 8.8-9.12 0-.62-.07-1.06-.62-1.3z"
+                fill="#4285F4"
+              />
+            </svg>
+            <span>Daftar dengan Google</span>
           </button>
         </div>
 
