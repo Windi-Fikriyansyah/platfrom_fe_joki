@@ -2,6 +2,7 @@
 
 import React, { useRef, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useToast } from "@/components/ToastProvider";
 import ImageEditModal, { ImageTransform } from "@/components/ImageEditModal";
 import {
@@ -273,6 +274,7 @@ export default function ProductBasicPage() {
           preview: url,
           description: "",
           fileName: f.name,
+          _file: f,
         });
       }
       return next;
@@ -294,6 +296,21 @@ export default function ProductBasicPage() {
     setPortfolioItems((prev) =>
       prev.map((p) => (p.id === id ? { ...p, description: value } : p))
     );
+  }
+
+  async function uploadPortfolioImage(file: File) {
+    const fd = new FormData();
+    fd.append("image", file);
+
+    const resp = await fetch(`${API}/freelancer/products/portfolio/image`, {
+      method: "POST",
+      credentials: "include",
+      body: fd,
+    });
+
+    const data = await resp.json();
+    if (!data.success) throw new Error(data.message);
+    return data.url; // URL dari server
   }
 
   // style transform untuk <img> preview (upload box + preview)
@@ -346,6 +363,17 @@ export default function ProductBasicPage() {
       .map((b) => b.trim())
       .filter(Boolean);
 
+    const uploadedImages = await Promise.all(
+      portfolioItems.map(async (item) => {
+        const file = item._file;
+        const url = await uploadPortfolioImage(file);
+        return {
+          file_name: url,
+          description: item.description.trim(),
+        };
+      })
+    );
+
     const payload = {
       title: title.trim(),
       category: kategori,
@@ -381,11 +409,7 @@ export default function ProductBasicPage() {
       },
 
       portfolio_video_url: portfolioVideoUrl.trim(),
-      portfolio_images: portfolioItems.map((item) => ({
-        file_name: item.fileName,
-        description: item.description.trim(),
-      })),
-
+      portfolio_images: uploadedImages,
       status, // "draft" atau "review"
     };
 
@@ -407,17 +431,13 @@ export default function ProductBasicPage() {
         throw new Error(data?.message || "Gagal menyimpan produk");
       }
 
-      // TOAST SUKSES
-      if (status === "draft") {
-        showToast("Produk disimpan sebagai draft.", "success");
-      } else {
-        showToast("Produk berhasil dikirim untuk ditinjau.", "success");
-      }
-
-      // kalau mau redirect setelah kirim untuk ditinjau, bisa aktifkan ini:
-      // if (status === "review") {
-      //   router.push("/start-selling");
-      // }
+      showToast(
+        status === "draft"
+          ? "Produk disimpan sebagai draft."
+          : "Produk berhasil dikirim untuk ditinjau.",
+        "success"
+      );
+      router.push("/freelancer/dashboard/product");
     } catch (err: any) {
       console.error(err);
       showToast(
@@ -1127,23 +1147,6 @@ export default function ProductBasicPage() {
                   </h1>
                 </div>
               </div>
-
-              <button
-                type="button"
-                className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-white px-4 py-2 text-xs font-semibold text-gray-700 hover:bg-gray-50"
-              >
-                <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-blue-50 text-blue-600">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                    <path
-                      d="M12 5v14M5 12h14"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                    />
-                  </svg>
-                </span>
-                Pratinjau halaman pekerjaan Anda
-              </button>
             </div>
 
             {/* CARD PORTOFOLIO (GAMBAR) */}
@@ -1345,6 +1348,19 @@ export default function ProductBasicPage() {
           {/* LEFT */}
           <div className="lg:col-span-9">
             <div className="bg-white rounded-lg shadow p-6">
+              <div className="flex items-center text-sm text-gray-500 mb-6">
+                <Link
+                  href="/freelancer/dashboard/product"
+                  className="text-blue-600 font-semibold"
+                >
+                  Layanan Saya
+                </Link>
+                <span className="mx-2 text-gray-400">›</span>
+                <span className="font-semibold text-gray-700">
+                  Detail Pekerjaan
+                </span>
+              </div>
+
               <h2 className="text-xl font-semibold mb-4">Detail Pekerjaan</h2>
 
               <div className="space-y-2">

@@ -235,14 +235,16 @@ export default function Navbar() {
 
                     {/* Items */}
                     <div className="p-2">
-                      <Link
-                        href="/dashboard"
-                        onClick={() => setAccountOpen(false)}
-                        className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold hover:bg-black/5"
-                      >
-                        <Briefcase className="w-5 h-5 text-black/70" />
-                        <span>Dashboard Freelancer</span>
-                      </Link>
+                      {userRole === "freelancer" && (
+                        <Link
+                          href="/freelancer/dashboard"
+                          onClick={() => setAccountOpen(false)}
+                          className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold hover:bg-black/5"
+                        >
+                          <Briefcase className="w-5 h-5 text-black/70" />
+                          <span>Dashboard Freelancer</span>
+                        </Link>
+                      )}
 
                       <Link
                         href="/dashboard"
