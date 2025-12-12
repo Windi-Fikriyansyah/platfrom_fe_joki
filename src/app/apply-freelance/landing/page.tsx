@@ -14,7 +14,7 @@ export default function ApplyFreelancerLanding() {
           pekerjaan dan layanan Anda agar klien dapat menemukan Anda.
         </p>
         <Link
-          href="/gig"
+          href="/product/basic"
           className="inline-block px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold shadow hover:bg-blue-700 transition"
         >
           Tambahkan Pekerjaan / Layanan

@@ -7,16 +7,30 @@ import { categories } from "@/lib/mock";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { useToast } from "@/components/ToastProvider";
-import { Bell, MessageCircle } from "lucide-react";
+import {
+  Bell,
+  MessageCircle,
+  LayoutDashboard,
+  Briefcase,
+  Grid3X3,
+  User,
+  UserPlus,
+  LogOut,
+  ChevronDown,
+  Settings,
+  Store,
+} from "lucide-react";
 
 export default function Navbar() {
-  const [mounted, setMounted] = useState(false); // FIX utama anti-flash
+  const [mounted, setMounted] = useState(false);
+  const [authLoading, setAuthLoading] = useState(true);
   const [open, setOpen] = useState(false); // mobile menu
   const [accountOpen, setAccountOpen] = useState(false); // account dropdown
   const accountRef = useRef<HTMLDivElement | null>(null);
 
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userName, setUserName] = useState<string>("");
+  const [userRole, setUserRole] = useState<string | null>(null);
 
   const router = useRouter();
   const { showToast } = useToast();
@@ -24,28 +38,47 @@ export default function Navbar() {
   useEffect(() => {
     setMounted(true);
 
+    const ac = new AbortController();
+
     const syncAuth = async () => {
+      setAuthLoading(true);
       try {
         const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/me`, {
           credentials: "include",
+          cache: "no-store",
+          signal: ac.signal,
         });
 
-        const data = await res.json();
+        // kalau 401/403 anggap guest (hindari json error)
+        if (res.status === 401 || res.status === 403) {
+          setIsLoggedIn(false);
+          setUserName("");
+          setUserRole(null);
+          return;
+        }
+
+        const data = await res.json().catch(() => null);
 
         if (data?.success) {
           setIsLoggedIn(true);
-          setUserName(data.data.name);
+          setUserName(data.data?.name ?? "");
+          setUserRole((data.data?.role ?? "").toLowerCase() || null);
         } else {
           setIsLoggedIn(false);
           setUserName("");
+          setUserRole(null);
         }
       } catch {
         setIsLoggedIn(false);
         setUserName("");
+        setUserRole(null);
+      } finally {
+        setAuthLoading(false);
       }
     };
 
     syncAuth();
+    return () => ac.abort();
   }, []);
 
   // Tutup dropdown ketika klik di luar
@@ -80,7 +113,6 @@ export default function Navbar() {
     router.push("/");
   }
 
-  // 🚀 FIX HYDRATION: Tahan render auth sampai mounted = true
   if (!mounted) {
     return <header className="h-14 sm:h-16 bg-white border-b" />;
   }
@@ -118,12 +150,6 @@ export default function Navbar() {
 
           {/* Desktop nav */}
           <nav className="hidden md:flex items-center gap-1 lg:gap-2 shrink-0">
-            {/* <Link
-              href="/dashboard"
-              className="rounded-lg lg:rounded-xl px-2 lg:px-3 py-1.5 lg:py-2 text-xs lg:text-sm font-semibold hover:bg-black/5"
-            >
-              Dashboard
-            </Link> */}
             <Link
               href="/dashboard"
               className="rounded-lg lg:rounded-xl px-2 lg:px-3 py-1.5 lg:py-2 text-xs lg:text-sm font-semibold hover:bg-black/5"
@@ -136,6 +162,7 @@ export default function Navbar() {
             >
               Layanan
             </Link>
+
             <Link
               href="/chat/1"
               className="relative flex items-center justify-center w-9 h-9 rounded-full hover:bg-black/5"
@@ -152,78 +179,131 @@ export default function Navbar() {
             >
               <Bell className="w-6 h-6 text-foreground" strokeWidth={2} />
             </Link>
-            <button
-              onClick={() => {
-                if (isLoggedIn) router.push("/start-selling");
-                else
-                  router.push(
-                    `/auth/login?next=${encodeURIComponent("/start-selling")}`
-                  );
-              }}
-              className="rounded-lg lg:rounded-xl px-2 lg:px-3 py-1.5 lg:py-2 text-xs lg:text-sm font-semibold hover:bg-black/5"
-            >
-              Daftar Freelancer
-            </button>
+
+            {userRole === "client" && (
+              <button
+                onClick={() => {
+                  if (isLoggedIn) router.push("/start-selling");
+                  else
+                    router.push(
+                      `/auth/login?next=${encodeURIComponent("/start-selling")}`
+                    );
+                }}
+                className="rounded-lg lg:rounded-xl px-2 lg:px-3 py-1.5 lg:py-2 text-xs lg:text-sm font-semibold hover:bg-black/5"
+              >
+                Daftar Freelancer
+              </button>
+            )}
 
             {/* LOGIN / AKUN */}
-            {isLoggedIn ? (
+            {/* LOGIN / AKUN */}
+            {authLoading ? (
+              // Skeleton biar gak “kedip” Sign in
+              <div className="flex items-center gap-2">
+                <div className="h-9 w-9 rounded-full bg-black/5 animate-pulse" />
+                <div className="h-9 w-28 rounded-xl bg-black/5 animate-pulse" />
+              </div>
+            ) : isLoggedIn ? (
               <div className="relative" ref={accountRef}>
                 <button
                   onClick={() => setAccountOpen((v) => !v)}
-                  className="flex items-center gap-2 rounded-lg px-2 lg:px-3 py-1.5 lg:py-2 text-xs lg:text-sm font-semibold hover:bg-black/5"
+                  className="flex items-center gap-2 rounded-xl px-2 lg:px-3 py-1.5 lg:py-2 text-xs lg:text-sm font-semibold hover:bg-black/5"
                 >
                   <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-black text-white text-xs font-bold">
                     {(userName?.trim()?.[0] || "U").toUpperCase()}
                   </span>
-                  <span className="max-w-[120px] truncate">{userName}</span>
-                  <span className="text-black/60">▾</span>
+                  <span className="max-w-[140px] truncate">{userName}</span>
+                  <ChevronDown className="w-4 h-4 text-black/60" />
                 </button>
 
                 {accountOpen && (
-                  <div className="absolute right-0 mt-2 w-56 overflow-hidden rounded-xl border bg-white shadow-lg">
-                    <div className="px-3 py-2 border-b">
+                  <div className="absolute right-0 mt-2 w-72 overflow-hidden rounded-2xl border bg-white shadow-xl">
+                    {/* Header dropdown */}
+                    <div className="px-4 py-3 border-b bg-gradient-to-b from-black/[0.02] to-transparent">
                       <p className="text-xs text-black/50">Masuk sebagai</p>
                       <p className="text-sm font-semibold truncate">
                         {userName}
                       </p>
+
+                      {userRole && (
+                        <div className="mt-2 inline-flex items-center gap-2 rounded-full border px-2.5 py-1 text-[11px] font-semibold text-black/70">
+                          <span className="inline-block h-1.5 w-1.5 rounded-full bg-black/60" />
+                          {userRole}
+                        </div>
+                      )}
                     </div>
 
-                    <Link
-                      href="/dashboard"
-                      className="block px-3 py-2 text-sm hover:bg-black/5"
-                    >
-                      Dashboard
-                    </Link>
-                    <Link
-                      href="/chat"
-                      className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-black/5"
-                    >
-                      <MessageCircle className="w-4 h-4" />
-                      Chat
-                    </Link>
+                    {/* Items */}
+                    <div className="p-2">
+                      <Link
+                        href="/dashboard"
+                        onClick={() => setAccountOpen(false)}
+                        className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold hover:bg-black/5"
+                      >
+                        <Briefcase className="w-5 h-5 text-black/70" />
+                        <span>Dashboard Freelancer</span>
+                      </Link>
 
-                    <button
-                      onClick={() => {
-                        if (isLoggedIn) router.push("/start-selling");
-                        else
-                          router.push(
-                            `/auth/login?next=${encodeURIComponent(
-                              "/start-selling"
-                            )}`
-                          );
-                        setAccountOpen(false);
-                      }}
-                      className="block w-full text-left px-3 py-2 text-sm hover:bg-black/5"
-                    >
-                      Daftar Freelancer
-                    </button>
+                      <Link
+                        href="/dashboard"
+                        onClick={() => setAccountOpen(false)}
+                        className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold hover:bg-black/5"
+                      >
+                        <Settings className="w-5 h-5 text-black/70" />
+                        <span>Pengaturan</span>
+                      </Link>
 
-                    <button
-                      onClick={handleLogout}
-                      className="w-full text-left px-3 py-2 text-sm font-semibold text-white bg-red-600 hover:bg-red-700"
-                    >
-                      Keluar
-                    </button>
+                      <Link
+                        href="/chat"
+                        onClick={() => setAccountOpen(false)}
+                        className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold hover:bg-black/5"
+                      >
+                        <MessageCircle className="w-5 h-5 text-black/70" />
+                        <span>Kotak Pesan dan Order</span>
+                      </Link>
+
+                      <Link
+                        href="/notifications"
+                        onClick={() => setAccountOpen(false)}
+                        className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold hover:bg-black/5"
+                      >
+                        <Bell className="w-5 h-5 text-black/70" />
+                        <span>Notifikasi</span>
+                      </Link>
+
+                      <Link
+                        href="/profile"
+                        onClick={() => setAccountOpen(false)}
+                        className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold hover:bg-black/5"
+                      >
+                        <User className="w-5 h-5 text-black/70" />
+                        <span>Profil Saya</span>
+                      </Link>
+
+                      {/* Biar gak kedip juga, hanya tampil setelah authLoading=false (sudah) */}
+                      {userRole === "client" && (
+                        <button
+                          onClick={() => {
+                            router.push("/start-selling");
+                            setAccountOpen(false);
+                          }}
+                          className="w-full flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold hover:bg-black/5"
+                        >
+                          <UserPlus className="w-5 h-5 text-black/70" />
+                          <span>Daftar Freelancer</span>
+                        </button>
+                      )}
+                    </div>
+
+                    <div className="border-t p-2">
+                      <button
+                        onClick={handleLogout}
+                        className="w-full flex items-center justify-center gap-2 rounded-xl px-3 py-2.5 text-sm font-semibold text-white bg-red-600 hover:bg-red-700"
+                      >
+                        <LogOut className="w-5 h-5" />
+                        Keluar
+                      </button>
+                    </div>
                   </div>
                 )}
               </div>
@@ -290,47 +370,63 @@ export default function Navbar() {
           </div>
         </div>
 
-        {/* Mobile dropdown */}
+        {/* Mobile dropdown (dibesarkan + icon + nama) */}
         {open && (
           <div id="mobile-menu" className="md:hidden pb-3">
-            <div className="rounded-xl border bg-white p-2 sm:p-3">
-              <div className="grid grid-cols-2 gap-1.5 sm:gap-2">
+            <div className="rounded-2xl border bg-white p-3">
+              <div className="grid grid-cols-1 gap-2">
                 <Link
                   href="/dashboard"
                   onClick={() => setOpen(false)}
-                  className="btn-mobile"
+                  className="h-11 rounded-xl border px-3 text-sm font-semibold hover:bg-black/5 flex items-center gap-3"
                 >
+                  <LayoutDashboard className="w-5 h-5 text-black/70" />
                   Dashboard
                 </Link>
+
                 <Link
                   href="/chat/1"
                   onClick={() => setOpen(false)}
-                  className="btn-mobile"
+                  className="h-11 rounded-xl border px-3 text-sm font-semibold hover:bg-black/5 flex items-center gap-3"
                 >
+                  <MessageCircle className="w-5 h-5 text-black/70" />
                   Chat
                 </Link>
 
-                <button
-                  onClick={() => {
-                    setOpen(false);
-                    if (isLoggedIn) router.push("/start-selling");
-                    else
-                      router.push(
-                        `/auth/login?next=${encodeURIComponent(
-                          "/start-selling"
-                        )}`
-                      );
-                  }}
-                  className="col-span-2 btn-mobile"
+                <Link
+                  href="/notifications"
+                  onClick={() => setOpen(false)}
+                  className="h-11 rounded-xl border px-3 text-sm font-semibold hover:bg-black/5 flex items-center gap-3"
                 >
-                  Daftar Freelancer
-                </button>
+                  <Bell className="w-5 h-5 text-black/70" />
+                  Notifikasi
+                </Link>
+
+                {!authLoading && userRole === "client" && (
+                  <button
+                    onClick={() => {
+                      setOpen(false);
+                      if (isLoggedIn) router.push("/start-selling");
+                      else
+                        router.push(
+                          `/auth/login?next=${encodeURIComponent(
+                            "/start-selling"
+                          )}`
+                        );
+                    }}
+                    className="h-11 rounded-xl border px-3 text-sm font-semibold hover:bg-black/5 flex items-center gap-3"
+                  >
+                    <UserPlus className="w-5 h-5 text-black/70" />
+                    Daftar Freelancer
+                  </button>
+                )}
 
                 {isLoggedIn ? (
                   <button
                     onClick={handleLogout}
-                    className="col-span-2 h-9 sm:h-11 rounded-lg bg-red-600 text-white text-xs sm:text-sm font-semibold hover:bg-red-700"
+                    className="h-11 rounded-xl bg-red-600 text-white text-sm font-semibold hover:bg-red-700 flex items-center justify-center gap-2"
                   >
+                    <LogOut className="w-5 h-5" />
                     Keluar
                   </button>
                 ) : (
@@ -338,15 +434,17 @@ export default function Navbar() {
                     <Link
                       href="/auth/login"
                       onClick={() => setOpen(false)}
-                      className="btn-mobile col-span-2"
+                      className="h-11 rounded-xl border px-3 text-sm font-semibold hover:bg-black/5 flex items-center gap-3"
                     >
+                      <User className="w-5 h-5 text-black/70" />
                       Masuk
                     </Link>
                     <Link
                       href="/auth/register"
                       onClick={() => setOpen(false)}
-                      className="btn-mobile col-span-2 bg-black text-white"
+                      className="h-11 rounded-xl bg-black text-white px-3 text-sm font-semibold hover:bg-black/90 flex items-center gap-3"
                     >
+                      <UserPlus className="w-5 h-5 text-white/90" />
                       Daftar
                     </Link>
                   </>

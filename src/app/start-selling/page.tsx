@@ -17,8 +17,20 @@ export default function StartSellingPage() {
       const res = await fetch(`${api}/freelancer/onboarding`, {
         credentials: "include",
       });
-      if (res.status === 401 || res.status === 403) {
+      if (res.status === 401) {
+        // benar-benar belum login → ke login
         router.push(`/auth/login?next=${encodeURIComponent("/start-selling")}`);
+        return;
+      }
+
+      if (res.status === 403) {
+        // sudah login tapi role bukan client (mungkin sudah freelancer)
+        showToast(
+          "Akun kamu tidak bisa daftar dari sini (role bukan client).",
+          "danger"
+        );
+        // misal arahkan ke halaman lain, contoh:
+        router.push("/gig"); // atau dashboard freelancer kamu
         return;
       }
 

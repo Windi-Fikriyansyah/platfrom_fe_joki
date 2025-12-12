@@ -2,6 +2,7 @@
 
 import React, { useRef, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useToast } from "@/components/ToastProvider";
 import ImageEditModal, { ImageTransform } from "@/components/ImageEditModal";
 import {
   Trash2,
@@ -10,6 +11,7 @@ import {
   FolderOpen,
   ChevronRight,
   ChevronDown,
+  PlayCircle,
 } from "lucide-react";
 
 const DEFAULT_TRANSFORM: ImageTransform = {
@@ -30,13 +32,37 @@ function formatRupiahDigits(digits: string) {
   return new Intl.NumberFormat("id-ID").format(n);
 }
 
-type ViewMode = "main" | "visibility" | "packages";
+const API = process.env.NEXT_PUBLIC_API_BASE_URL || "";
+
+type ApiResp<T> = {
+  success: boolean;
+  message?: string;
+  data?: T;
+};
+
+type FreelancerProfile = {
+  system_name?: string;
+  photo_url?: string;
+};
+
+type ViewMode = "main" | "visibility" | "packages" | "portfolio";
+
+type PortfolioItem = {
+  id: number;
+  preview: string;
+  description: string;
+  fileName: string;
+};
 
 export default function ProductBasicPage() {
   const router = useRouter();
+  const { showToast } = useToast();
+  const [showReviewConfirm, setShowReviewConfirm] = useState(false);
   const inputCoverRef = useRef<HTMLInputElement | null>(null);
 
   const [viewMode, setViewMode] = useState<ViewMode>("main");
+  const [systemName, setSystemName] = useState<string>("");
+  const [photoUrl, setPhotoUrl] = useState<string | null>(null);
 
   const [coverFile, setCoverFile] = useState<File | null>(null);
   const [coverPreview, setCoverPreview] = useState<string | null>(null);
@@ -55,18 +81,16 @@ export default function ProductBasicPage() {
 
   // form fields
   const [title, setTitle] = useState("");
-  const [subcategory, setSubcategory] = useState("");
+  const [kategori, setSubcategory] = useState("");
   const [priceDigits, setPriceDigits] = useState(""); // contoh: "1500000"
 
   // extra fields
   const [description, setDescription] = useState(""); // <- DESKRIPSI (visibility)
   const MAX_DESC = 5000;
 
-  // accordion states lain (tetap)
-  const [packagesOpen, setPackagesOpen] = useState(false);
-  const [portfolioOpen, setPortfolioOpen] = useState(false);
+  // accordion states lain (packages)
+  const [packagesOpen] = useState(false); // sudah diganti ke halaman khusus
   const [packagesNote, setPackagesNote] = useState("");
-  const [portfolioNote, setPortfolioNote] = useState("");
 
   // STATE UNTUK HALAMAN INFORMASI PAKET
   const [basicTitle, setBasicTitle] = useState("Basic");
@@ -93,8 +117,41 @@ export default function ProductBasicPage() {
   const [standardBenefits, setStandardBenefits] = useState<string[]>([""]);
   const [premiumBenefits, setPremiumBenefits] = useState<string[]>([""]);
 
+  // ===== PORTFOLIO STATE =====
+  const [portfolioItems, setPortfolioItems] = useState<PortfolioItem[]>([]);
+  const [portfolioVideoUrl, setPortfolioVideoUrl] = useState("");
+  const portfolioInputRef = useRef<HTMLInputElement | null>(null);
+
+  const [coverUrl, setCoverUrl] = useState<string>("");
+
+  const MAX_PORTFOLIO_IMAGES = 30;
+  const [saving, setSaving] = useState(false);
+
+  // RINGKASAN PAKET UNTUK DITAMPILKAN DI HALAMAN UTAMA
+  function buildPackagesNote() {
+    const prices = [
+      { label: basicTitle || "Basic", digits: basicPriceDigits },
+      { label: standardTitle || "Standard", digits: standardPriceDigits },
+      { label: premiumTitle || "Premium", digits: premiumPriceDigits },
+    ].filter((p) => p.digits && Number(p.digits) > 0);
+
+    if (!prices.length) return "";
+
+    const min = prices.reduce(
+      (acc, p) => {
+        const v = Number(p.digits);
+        return v < acc.value ? { label: p.label, value: v } : acc;
+      },
+      { label: prices[0].label, value: Number(prices[0].digits) }
+    );
+
+    return `${prices.length} paket aktif, mulai dari Rp ${formatRupiahDigits(
+      String(min.value)
+    )}`;
+  }
+
   useEffect(() => {
-    // setiap ganti view (main <-> visibility <-> packages), scroll ke atas
+    // setiap ganti view (main <-> visibility <-> packages <-> portfolio), scroll ke atas
     if (typeof window !== "undefined") {
       window.scrollTo({
         top: 0,
@@ -103,6 +160,60 @@ export default function ProductBasicPage() {
       });
     }
   }, [viewMode]);
+
+  // ambil system_name freelancer dari backend
+  useEffect(() => {
+    if (!API) return;
+
+    (async () => {
+      try {
+        const resp = await fetch(`${API}/freelancer/profile/me`, {
+          method: "GET",
+          credentials: "include", // penting, karena JWT di cookie
+        });
+
+        const data: ApiResp<FreelancerProfile> = await resp
+          .json()
+          .catch(() => ({ success: false } as any));
+
+        if (resp.ok && data.success && data.data) {
+          if (data.data.system_name) {
+            setSystemName(data.data.system_name);
+          }
+          if (data.data.photo_url) {
+            setPhotoUrl(data.data.photo_url);
+          }
+        }
+      } catch (err) {
+        console.error("Gagal mengambil profil freelancer:", err);
+      }
+    })();
+  }, []);
+
+  async function uploadCoverIfNeeded(): Promise<string> {
+    if (!coverFile) return coverUrl;
+
+    // sudah pernah upload di sesi ini
+    if (coverUrl) return coverUrl;
+
+    const fd = new FormData();
+    fd.append("cover", coverFile);
+
+    const resp = await fetch(`${API}/freelancer/products/cover`, {
+      method: "POST",
+      credentials: "include",
+      body: fd,
+    });
+
+    const data = await resp.json().catch(() => null);
+
+    if (!resp.ok || !data?.success || !data?.url) {
+      throw new Error(data?.message || "Gagal mengupload cover");
+    }
+
+    setCoverUrl(data.url as string);
+    return data.url as string;
+  }
 
   function revokeIfBlob(url: string | null) {
     if (url && url.startsWith("blob:")) URL.revokeObjectURL(url);
@@ -147,6 +258,44 @@ export default function ProductBasicPage() {
     if (inputCoverRef.current) inputCoverRef.current.value = "";
   }
 
+  // PORTFOLIO handlers
+  function handlePortfolioFiles(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(e.target.files ?? []);
+    if (!files.length) return;
+
+    setPortfolioItems((prev) => {
+      const next: PortfolioItem[] = [...prev];
+      for (const f of files) {
+        if (next.length >= MAX_PORTFOLIO_IMAGES) break;
+        const url = URL.createObjectURL(f);
+        next.push({
+          id: Date.now() + Math.random(),
+          preview: url,
+          description: "",
+          fileName: f.name,
+        });
+      }
+      return next;
+    });
+
+    // reset input supaya bisa upload file yang sama lagi kalau mau
+    if (e.target) e.target.value = "";
+  }
+
+  function removePortfolioItem(id: number) {
+    setPortfolioItems((prev) => {
+      const found = prev.find((p) => p.id === id);
+      if (found) revokeIfBlob(found.preview);
+      return prev.filter((p) => p.id !== id);
+    });
+  }
+
+  function updatePortfolioDescription(id: number, value: string) {
+    setPortfolioItems((prev) =>
+      prev.map((p) => (p.id === id ? { ...p, description: value } : p))
+    );
+  }
+
   // style transform untuk <img> preview (upload box + preview)
   const coverImgStyle: React.CSSProperties = coverPreview
     ? {
@@ -160,6 +309,125 @@ export default function ProductBasicPage() {
         willChange: "transform",
       }
     : {};
+
+  async function saveProduct(status: "draft" | "review") {
+    if (!title.trim() || !kategori.trim()) {
+      showToast("Judul dan kategori wajib diisi.", "danger");
+      return;
+    }
+
+    const finalCoverUrl = await uploadCoverIfNeeded();
+
+    // BERSIHKAN ANGKA DULU
+    const basePriceNum = Number(onlyDigits(priceDigits) || "0");
+
+    const basicPriceNum = Number(onlyDigits(basicPriceDigits) || "0");
+    const standardPriceNum = Number(onlyDigits(standardPriceDigits) || "0");
+    const premiumPriceNum = Number(onlyDigits(premiumPriceDigits) || "0");
+
+    const basicDeliveryNum = Number(onlyDigits(basicDelivery) || "0");
+    const standardDeliveryNum = Number(onlyDigits(standardDelivery) || "0");
+    const premiumDeliveryNum = Number(onlyDigits(premiumDelivery) || "0");
+
+    const basicRevisionsNum = Number(onlyDigits(basicRevisions) || "0");
+    const standardRevisionsNum = Number(onlyDigits(standardRevisions) || "0");
+    const premiumRevisionsNum = Number(onlyDigits(premiumRevisions) || "0");
+
+    // BERSIHKAN BENEFITS (trim + buang kosong)
+    const cleanBasicBenefits = basicBenefits
+      .map((b) => b.trim())
+      .filter(Boolean);
+
+    const cleanStandardBenefits = standardBenefits
+      .map((b) => b.trim())
+      .filter(Boolean);
+
+    const cleanPremiumBenefits = premiumBenefits
+      .map((b) => b.trim())
+      .filter(Boolean);
+
+    const payload = {
+      title: title.trim(),
+      category: kategori,
+      base_price: basePriceNum,
+
+      visibility_description: description.trim(),
+      cover_url: finalCoverUrl,
+      cover_transform: coverTransform,
+
+      basic: {
+        title: (basicTitle || "Basic").trim(),
+        description: basicDesc.trim(),
+        delivery_days: basicDeliveryNum,
+        revisions: basicRevisionsNum,
+        price: basicPriceNum,
+        benefits: cleanBasicBenefits,
+      },
+      standard: {
+        title: (standardTitle || "Standard").trim(),
+        description: standardDesc.trim(),
+        delivery_days: standardDeliveryNum,
+        revisions: standardRevisionsNum,
+        price: standardPriceNum,
+        benefits: cleanStandardBenefits,
+      },
+      premium: {
+        title: (premiumTitle || "Premium").trim(),
+        description: premiumDesc.trim(),
+        delivery_days: premiumDeliveryNum,
+        revisions: premiumRevisionsNum,
+        price: premiumPriceNum,
+        benefits: cleanPremiumBenefits,
+      },
+
+      portfolio_video_url: portfolioVideoUrl.trim(),
+      portfolio_images: portfolioItems.map((item) => ({
+        file_name: item.fileName,
+        description: item.description.trim(),
+      })),
+
+      status, // "draft" atau "review"
+    };
+
+    try {
+      setSaving(true);
+
+      const resp = await fetch(`${API}/freelancer/products/basic`, {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const data: ApiResp<unknown> = await resp.json().catch(() => null);
+
+      if (!resp.ok || !data?.success) {
+        throw new Error(data?.message || "Gagal menyimpan produk");
+      }
+
+      // TOAST SUKSES
+      if (status === "draft") {
+        showToast("Produk disimpan sebagai draft.", "success");
+      } else {
+        showToast("Produk berhasil dikirim untuk ditinjau.", "success");
+      }
+
+      // kalau mau redirect setelah kirim untuk ditinjau, bisa aktifkan ini:
+      // if (status === "review") {
+      //   router.push("/start-selling");
+      // }
+    } catch (err: any) {
+      console.error(err);
+      showToast(
+        err?.message || "Terjadi kesalahan saat menyimpan produk",
+        "danger"
+      );
+    } finally {
+      setSaving(false);
+    }
+  }
 
   // =========================
   // VIEW: VISIBILITY (DESKRIPSI)
@@ -797,7 +1065,11 @@ export default function ProductBasicPage() {
                   </button>
                   <button
                     type="button"
-                    onClick={() => setViewMode("main")}
+                    onClick={() => {
+                      const note = buildPackagesNote();
+                      setPackagesNote(note);
+                      setViewMode("main");
+                    }}
                     className="px-4 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700"
                   >
                     Simpan & Kembali
@@ -809,6 +1081,249 @@ export default function ProductBasicPage() {
         </div>
 
         {/* MODAL */}
+        <ImageEditModal
+          src={originalCoverPreview || ""}
+          open={showCoverModal}
+          onClose={() => setShowCoverModal(false)}
+          onSave={handleSaveImageTransform}
+          initialTransform={coverTransform}
+        />
+      </>
+    );
+  }
+
+  // =========================
+  // VIEW: PORTFOLIO (ALBUM)
+  // =========================
+  if (viewMode === "portfolio") {
+    const imageCount = portfolioItems.length;
+
+    return (
+      <>
+        <div className="min-h-screen bg-gray-50 py-8 px-6">
+          <div className="max-w-6xl mx-auto">
+            {/* TOP BAR */}
+            <div className="flex items-center justify-between gap-4 mb-6">
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => setViewMode("main")}
+                  className="inline-flex h-10 w-10 items-center justify-center rounded-full hover:bg-gray-100"
+                  aria-label="Kembali"
+                >
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                    <path
+                      d="M15 18l-6-6 6-6"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                </button>
+                <div>
+                  <h1 className="mt-1 text-xl font-bold text-gray-900">
+                    Album Portofolio
+                  </h1>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-white px-4 py-2 text-xs font-semibold text-gray-700 hover:bg-gray-50"
+              >
+                <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-blue-50 text-blue-600">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                    <path
+                      d="M12 5v14M5 12h14"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                    />
+                  </svg>
+                </span>
+                Pratinjau halaman pekerjaan Anda
+              </button>
+            </div>
+
+            {/* CARD PORTOFOLIO (GAMBAR) */}
+            <div className="bg-white rounded-xl shadow-sm border overflow-hidden">
+              <div className="px-6 py-4 border-b flex items-center gap-3">
+                <div className="h-10 w-10 rounded-full bg-blue-50 flex items-center justify-center text-blue-600">
+                  <FolderOpen className="w-5 h-5" />
+                </div>
+                <div>
+                  <div className="font-semibold text-gray-900">Portofolio</div>
+                  <div className="text-xs text-gray-500">
+                    Pilih gambar yang mewakili pekerjaan Anda. Gambar tersebut
+                    akan ditampilkan pada produk pekerjaan Anda.
+                  </div>
+                </div>
+              </div>
+
+              <div className="px-6 py-5 space-y-4">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div className="text-sm font-semibold text-gray-800">
+                    Gambar ({imageCount} / {MAX_PORTFOLIO_IMAGES})
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <input
+                      ref={portfolioInputRef}
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      className="hidden"
+                      onChange={handlePortfolioFiles}
+                    />
+
+                    <button
+                      type="button"
+                      onClick={() => portfolioInputRef.current?.click()}
+                      className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-xs font-semibold text-white hover:bg-blue-700"
+                    >
+                      <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-blue-500/80">
+                        +
+                      </span>
+                      Upload foto pekerjaan
+                    </button>
+                  </div>
+                </div>
+
+                {/* GRID GAMBAR */}
+                {imageCount === 0 ? (
+                  <div className="border-2 border-dashed border-gray-200 rounded-xl px-6 py-10 text-center text-sm text-gray-500 bg-gray-50">
+                    <div className="flex flex-col items-center gap-2">
+                      <div className="h-12 w-12 rounded-full bg-gray-100 flex items-center justify-center text-gray-400">
+                        <svg
+                          className="h-6 w-6"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                        >
+                          <path
+                            d="M4 5h16v14H4z"
+                            stroke="currentColor"
+                            strokeWidth="1.6"
+                          />
+                          <path
+                            d="M4 15l4-4 4 4 4-5 4 5"
+                            stroke="currentColor"
+                            strokeWidth="1.6"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                        </svg>
+                      </div>
+                      <div className="font-semibold text-gray-700">
+                        Belum ada foto portofolio
+                      </div>
+                      <div className="text-xs text-gray-500 max-w-sm">
+                        Upload hingga {MAX_PORTFOLIO_IMAGES} gambar berkualitas
+                        tinggi yang menunjukkan hasil pekerjaan terbaik Anda.
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => portfolioInputRef.current?.click()}
+                        className="mt-2 inline-flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-xs font-semibold text-white hover:bg-blue-700"
+                      >
+                        Upload foto pekerjaan
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {portfolioItems.map((item) => (
+                      <div
+                        key={item.id}
+                        className="border rounded-xl overflow-hidden bg-gray-50"
+                      >
+                        <div className="relative aspect-[16/10] bg-black/5 overflow-hidden">
+                          <img
+                            src={item.preview}
+                            alt={item.fileName}
+                            className="h-full w-full object-cover"
+                          />
+                          <div className="absolute top-2 right-2 flex gap-1">
+                            <button
+                              type="button"
+                              onClick={() => removePortfolioItem(item.id)}
+                              className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-black/60 text-white hover:bg-black/80"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </button>
+                          </div>
+                        </div>
+                        <div className="p-3 border-t bg-white">
+                          <div className="text-[11px] text-gray-500 mb-1">
+                            {item.fileName}
+                          </div>
+                          <textarea
+                            value={item.description}
+                            onChange={(e) =>
+                              updatePortfolioDescription(
+                                item.id,
+                                e.target.value
+                              )
+                            }
+                            placeholder="Tambahkan deskripsi foto (opsional)"
+                            className="w-full text-xs border rounded-lg px-2 py-2 min-h-[70px] focus:outline-none focus:ring-2 focus:ring-blue-100"
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* CARD VIDEO PORTOFOLIO */}
+            <div className="mt-5 bg-white rounded-xl shadow-sm border overflow-hidden">
+              <div className="px-6 py-4 border-b flex items-center gap-3">
+                <div className="h-10 w-10 rounded-full bg-amber-50 flex items-center justify-center text-amber-500">
+                  <PlayCircle className="w-5 h-5" />
+                </div>
+                <div>
+                  <div className="font-semibold text-gray-900">
+                    Video Portofolio
+                  </div>
+                  <div className="text-xs text-gray-500">
+                    Salin tautan video pekerjaan Anda dari YouTube untuk
+                    ditampilkan di halaman produk.
+                  </div>
+                </div>
+              </div>
+
+              <div className="px-6 py-5">
+                <label className="block mb-2 text-sm font-medium text-gray-700">
+                  Tautan video
+                </label>
+                <input
+                  type="url"
+                  value={portfolioVideoUrl}
+                  onChange={(e) => setPortfolioVideoUrl(e.target.value)}
+                  placeholder="Masukkan tautan video"
+                  className="w-full rounded-lg border px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-100"
+                />
+                <p className="mt-2 text-xs text-gray-500">
+                  Contoh: https://www.youtube.com/watch?v=xxxxxxxxxxx
+                </p>
+              </div>
+            </div>
+
+            {/* ACTIONS */}
+            <div className="mt-6 flex justify-end">
+              <button
+                type="button"
+                disabled={saving}
+                onClick={() => setViewMode("main")}
+                className="px-5 py-2.5 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                Simpan & Kembali
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* MODAL COVER (tetap dipakai dari halaman utama) */}
         <ImageEditModal
           src={originalCoverPreview || ""}
           open={showCoverModal}
@@ -972,17 +1487,18 @@ export default function ProductBasicPage() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Subkategori *
+                      Kategori *
                     </label>
                     <select
-                      value={subcategory}
+                      value={kategori}
                       onChange={(e) => setSubcategory(e.target.value)}
                       className="w-full border px-3 py-2 rounded-md"
                     >
-                      <option value="">Pilih subkategori</option>
-                      <option value="design">Design</option>
-                      <option value="writing">Writing</option>
-                      <option value="dev">Development</option>
+                      <option value="">Pilih Kategori</option>
+                      <option value="Skripsi">Skripsi</option>
+                      <option value="Makalah">Makalah</option>
+                      <option value="Proposal">Proposal</option>
+                      <option value="Coding/IT">Coding/IT</option>
                     </select>
                   </div>
 
@@ -1076,6 +1592,11 @@ export default function ProductBasicPage() {
                             <div className="text-xs text-gray-500">
                               Tambahkan opsi harga dan hasil.
                             </div>
+                            {packagesNote.trim() && (
+                              <div className="mt-1 text-[11px] text-emerald-700 font-semibold">
+                                ✓ {packagesNote}
+                              </div>
+                            )}
                           </div>
                         </div>
                         <div className="text-gray-400">
@@ -1088,7 +1609,7 @@ export default function ProductBasicPage() {
                     <div className="border rounded-lg overflow-hidden">
                       <button
                         type="button"
-                        onClick={() => setPortfolioOpen((s) => !s)}
+                        onClick={() => setViewMode("portfolio")}
                         className="w-full flex items-center justify-between p-3 bg-white hover:bg-gray-50"
                       >
                         <div className="flex items-center gap-3">
@@ -1098,28 +1619,19 @@ export default function ProductBasicPage() {
                           <div className="text-left">
                             <div className="font-medium">Portofolio</div>
                             <div className="text-xs text-gray-500">
-                              Unggah contoh pekerjaan atau tautan.
+                              Unggah contoh pekerjaan atau tautan video.
                             </div>
+                            {portfolioItems.length > 0 && (
+                              <div className="mt-1 text-[11px] text-emerald-700 font-semibold">
+                                ✓ {portfolioItems.length} gambar ditambahkan
+                              </div>
+                            )}
                           </div>
                         </div>
                         <div className="text-gray-400">
-                          {portfolioOpen ? (
-                            <ChevronDown className="w-4 h-4" />
-                          ) : (
-                            <ChevronRight className="w-4 h-4" />
-                          )}
+                          <ChevronRight className="w-4 h-4" />
                         </div>
                       </button>
-                      {portfolioOpen && (
-                        <div className="p-3 bg-gray-50">
-                          <textarea
-                            value={portfolioNote}
-                            onChange={(e) => setPortfolioNote(e.target.value)}
-                            placeholder="Tautan portofolio atau catatan"
-                            className="w-full border p-2 rounded text-sm"
-                          />
-                        </div>
-                      )}
                     </div>
                   </div>
                 </div>
@@ -1130,15 +1642,26 @@ export default function ProductBasicPage() {
                 <button
                   onClick={() => router.back()}
                   className="px-4 py-2 border rounded-md"
+                  type="button"
                 >
                   Kembali
                 </button>
                 <div className="flex gap-3">
-                  <button className="px-4 py-2 border rounded-md">
-                    Simpan Sebagai Draft
+                  <button
+                    type="button"
+                    disabled={saving}
+                    onClick={() => saveProduct("draft")}
+                    className="px-4 py-2 border rounded-md disabled:opacity-60 disabled:cursor-not-allowed"
+                  >
+                    {saving ? "Menyimpan..." : "Simpan Sebagai Draft"}
                   </button>
-                  <button className="px-4 py-2 bg-blue-600 text-white rounded-md">
-                    Kirim untuk Ditinjau
+                  <button
+                    type="button"
+                    disabled={saving}
+                    onClick={() => setShowReviewConfirm(true)}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-md disabled:opacity-60 disabled:cursor-not-allowed"
+                  >
+                    {saving ? "Mengirim..." : "Kirim untuk Ditinjau"}
                   </button>
                 </div>
               </div>
@@ -1176,7 +1699,7 @@ export default function ProductBasicPage() {
                 <div className="mt-2 sm:mt-3 flex items-start justify-between gap-2">
                   <div className="min-w-0">
                     <div className="text-[10px] sm:text-xs font-semibold text-black/50">
-                      {subcategory || "Subkategori"}
+                      {kategori || "Kategori"}
                     </div>
                     <div className="mt-1 line-clamp-2 text-xs sm:text-sm font-bold">
                       {title || "Judul Pekerjaan Anda"}
@@ -1189,10 +1712,18 @@ export default function ProductBasicPage() {
 
                 <div className="mt-2 sm:mt-3 flex items-center justify-between text-xs sm:text-sm">
                   <div className="flex items-center gap-2 text-black/60 min-w-0">
-                    <span className="h-7 sm:h-8 w-7 sm:w-8 shrink-0 rounded-full bg-black/10" />
+                    {photoUrl ? (
+                      <img
+                        src={photoUrl}
+                        alt={systemName || "Foto profil"}
+                        className="h-7 sm:h-8 w-7 sm:w-8 shrink-0 rounded-full object-cover"
+                      />
+                    ) : (
+                      <span className="h-7 sm:h-8 w-7 sm:w-8 shrink-0 rounded-full bg-black/10" />
+                    )}
                     <div className="leading-tight min-w-0">
                       <div className="font-semibold text-black truncate">
-                        Nama Anda
+                        {systemName || "Nama Anda"}
                       </div>
                       <div className="text-[10px] sm:text-xs truncate">
                         Penjual
@@ -1241,6 +1772,39 @@ export default function ProductBasicPage() {
         onSave={handleSaveImageTransform}
         initialTransform={coverTransform}
       />
+      {showReviewConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="bg-white rounded-xl shadow-lg max-w-sm w-full mx-4 p-5">
+            <h2 className="text-lg font-semibold text-gray-900 mb-2">
+              Kirim untuk Ditinjau?
+            </h2>
+            <p className="text-sm text-gray-600 mb-4">
+              Produk Anda (termasuk portofolio, paket, dan deskripsi) akan
+              disimpan dan dikirim ke tim kami untuk ditinjau.
+            </p>
+            <div className="flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setShowReviewConfirm(false)}
+                className="px-4 py-2 text-sm rounded-lg border hover:bg-gray-50"
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                disabled={saving}
+                onClick={async () => {
+                  await saveProduct("review");
+                  setShowReviewConfirm(false);
+                }}
+                className="px-4 py-2 text-sm rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                {saving ? "Mengirim..." : "Ya, kirim"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }

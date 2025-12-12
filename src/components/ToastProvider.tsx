@@ -38,7 +38,11 @@ export default function ToastProvider({
   return (
     <>
       {children}
-      <Toaster position="top-right" richColors />
+      <Toaster
+        position="top-center" // ⬅️ tengah
+        richColors
+        offset={72} // ⬅️ jarak dari atas (px) supaya pas di bawah navbar
+      />
     </>
   );
 }
