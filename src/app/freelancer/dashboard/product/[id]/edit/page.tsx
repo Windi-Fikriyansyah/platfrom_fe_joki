@@ -41,8 +41,8 @@ type PortfolioItem = {
   id: number;
   preview: string;
   description: string;
-  fileName: string;
   file?: File;
+  fileName: string;
 };
 
 type ProductPackage = {
@@ -365,7 +365,8 @@ export default function EditProductPage() {
           setPortfolioItems(
             p.portfolio.images.map((img) => ({
               id: Date.now() + Math.random(),
-              preview: `${img.file_name}`,
+              preview: img.file_name,
+              fileName: img.file_name,
               description: img.description,
             }))
           );
@@ -484,6 +485,24 @@ export default function EditProductPage() {
     return data.url as string;
   }
 
+  async function uploadPortfolioImage(file: File): Promise<string> {
+    const fd = new FormData();
+    fd.append("image", file);
+
+    const resp = await fetch(`${API}/freelancer/products/portfolio/image`, {
+      method: "POST",
+      credentials: "include",
+      body: fd,
+    });
+
+    const data = await resp.json();
+    if (!resp.ok || !data?.success) {
+      throw new Error(data?.message || "Upload portofolio gagal");
+    }
+
+    return data.url;
+  }
+
   async function updateProduct() {
     if (!title.trim() || !kategori.trim()) {
       showToast("Judul dan kategori wajib diisi.", "danger");
@@ -506,6 +525,22 @@ export default function EditProductPage() {
     const basicRevisionsNum = Number(onlyDigits(basicRevisions) || "0");
     const standardRevisionsNum = Number(onlyDigits(standardRevisions) || "0");
     const premiumRevisionsNum = Number(onlyDigits(premiumRevisions) || "0");
+    const portfolioImagesPayload = [];
+
+    for (const item of portfolioItems) {
+      let fileName = item.fileName;
+
+      if (item.file && !fileName) {
+        fileName = await uploadPortfolioImage(item.file);
+      }
+
+      if (fileName) {
+        portfolioImagesPayload.push({
+          file_name: fileName,
+          description: item.description.trim(),
+        });
+      }
+    }
 
     const cleanBasicBenefits = basicBenefits
       .map((b) => b.trim())
@@ -551,10 +586,7 @@ export default function EditProductPage() {
       },
 
       portfolio_video_url: portfolioVideoUrl.trim(),
-      portfolio_images: portfolioItems.map((item) => ({
-        file_name: item.fileName,
-        description: item.description.trim(),
-      })),
+      portfolio_images: portfolioImagesPayload,
     };
 
     try {
