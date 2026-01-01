@@ -7,7 +7,10 @@ interface ChatHeaderProps {
   wsConnected: boolean;
 }
 
-const ChatHeader = memo(function ChatHeader({ otherUser, wsConnected }: ChatHeaderProps) {
+const ChatHeader = memo(function ChatHeader({
+  otherUser,
+  wsConnected,
+}: ChatHeaderProps) {
   const displayName = getDisplayName(otherUser);
   const avatar = getAvatarInitial(otherUser);
 

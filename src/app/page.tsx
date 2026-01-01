@@ -2,7 +2,8 @@ import Link from "next/link";
 import GigCard from "@/components/GigCard";
 import FreelancerCard from "@/components/FreelancerCard";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3000/api";
+const API_BASE =
+  process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3000/api";
 
 async function getHomeData() {
   const fetchWithTimeout = async <T,>(
@@ -12,14 +13,14 @@ async function getHomeData() {
     try {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
-      
-      const res = await fetch(url, { 
+
+      const res = await fetch(url, {
         cache: "no-store",
-        signal: controller.signal 
+        signal: controller.signal,
       });
-      
+
       clearTimeout(timeoutId);
-      
+
       if (!res.ok) return null;
       return await res.json();
     } catch (error) {
@@ -182,12 +183,12 @@ export default async function HomePage() {
 
         <div className="mt-4 sm:mt-6 grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
           {gigs && gigs.length > 0 ? (
-            gigs.map((g: any) => (
-              <GigCard key={g.id} gig={g} />
-            ))
+            gigs.map((g: any) => <GigCard key={g.id} gig={g} />)
           ) : (
             <div className="col-span-full text-center py-12">
-              <p className="text-gray-500">Tidak ada layanan yang tersedia saat ini</p>
+              <p className="text-gray-500">
+                Tidak ada layanan yang tersedia saat ini
+              </p>
             </div>
           )}
         </div>

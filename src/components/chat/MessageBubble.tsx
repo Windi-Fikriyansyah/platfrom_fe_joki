@@ -6,7 +6,10 @@ interface MessageBubbleProps {
   isOwn: boolean;
 }
 
-const MessageBubble = memo(function MessageBubble({ msg, isOwn }: MessageBubbleProps) {
+const MessageBubble = memo(function MessageBubble({
+  msg,
+  isOwn,
+}: MessageBubbleProps) {
   return (
     <div className={`flex ${isOwn ? "justify-end" : "justify-start"}`}>
       <div
