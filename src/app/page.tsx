@@ -2,24 +2,54 @@ import Link from "next/link";
 import GigCard from "@/components/GigCard";
 import FreelancerCard from "@/components/FreelancerCard";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL!;
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3000/api";
 
 async function getHomeData() {
-  const [productRes, categoryRes] = await Promise.all([
-    fetch(`${API_BASE}/products`, { cache: "no-store" }),
-    fetch(`${API_BASE}/categories`, { cache: "no-store" }),
+  const fetchWithTimeout = async <T,>(
+    url: string,
+    timeoutMs: number = 5000
+  ): Promise<T | null> => {
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+      
+      const res = await fetch(url, { 
+        cache: "no-store",
+        signal: controller.signal 
+      });
+      
+      clearTimeout(timeoutId);
+      
+      if (!res.ok) return null;
+      return await res.json();
+    } catch (error) {
+      console.error(`Fetch error for ${url}:`, error);
+      return null;
+    }
+  };
+
+  // Use Promise.allSettled for better error handling
+  const [productResult, categoryResult] = await Promise.allSettled([
+    fetchWithTimeout(`${API_BASE}/products`, 5000),
+    fetchWithTimeout(`${API_BASE}/categories`, 5000),
   ]);
 
-  if (!productRes.ok || !categoryRes.ok) {
-    throw new Error("Gagal mengambil data homepage");
+  let gigs: any[] = [];
+  let categories: any[] = [];
+
+  if (productResult.status === "fulfilled" && productResult.value) {
+    const data = productResult.value as any;
+    gigs = data?.data ?? [];
   }
 
-  const productJson = await productRes.json();
-  const categoryJson = await categoryRes.json();
+  if (categoryResult.status === "fulfilled" && categoryResult.value) {
+    const data = categoryResult.value as any;
+    categories = data?.data ?? [];
+  }
 
   return {
-    gigs: productJson.data ?? [],
-    categories: categoryJson.data ?? [],
+    gigs,
+    categories,
   };
 }
 
@@ -151,9 +181,15 @@ export default async function HomePage() {
         </div>
 
         <div className="mt-4 sm:mt-6 grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
-          {gigs.map((g: any) => (
-            <GigCard key={g.id} gig={g} />
-          ))}
+          {gigs && gigs.length > 0 ? (
+            gigs.map((g: any) => (
+              <GigCard key={g.id} gig={g} />
+            ))
+          ) : (
+            <div className="col-span-full text-center py-12">
+              <p className="text-gray-500">Tidak ada layanan yang tersedia saat ini</p>
+            </div>
+          )}
         </div>
       </section>
 

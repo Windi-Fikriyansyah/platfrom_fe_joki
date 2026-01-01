@@ -1,9 +1,12 @@
 "use client";
 
 import { useChat } from "./useChat";
-import { useRef, useEffect, useState } from "react";
+import { useRef, useEffect, useState, memo, useMemo } from "react";
 import { Conversation, Message } from "./types";
 import { getDisplayName, getAvatarInitial } from "./utils";
+import ConversationItem from "./ConversationItem";
+import MessageBubble from "./MessageBubble";
+import ChatHeader from "./ChatHeader";
 
 interface ChatUIProps {
   initialMe: any;
@@ -13,7 +16,7 @@ interface ChatUIProps {
   initialPackage: string | null;
 }
 
-export default function ChatUI({
+const ChatUI = memo(function ChatUI({
   initialMe,
   initialConversations,
   initialActiveId,
@@ -149,57 +152,15 @@ export default function ChatUI({
               <p>No conversations yet</p>
             </div>
           ) : (
-            conversations.map((conv) => {
-              const display = getConversationDisplay(conv);
-              const isActive = conv.id === activeId;
-
-              return (
-                <div
-                  key={conv.id}
-                  onClick={() => setActiveId(conv.id)}
-                  className={`p-3 border-b border-gray-100 cursor-pointer hover:bg-gray-50 transition ${
-                    isActive ? "bg-gray-50" : ""
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    {/* Avatar */}
-                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white font-semibold flex-shrink-0">
-                      {display.avatar}
-                    </div>
-
-                    {/* Conversation Info */}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between">
-                        <h3 className="font-semibold text-gray-800 truncate">
-                          {display.name}
-                        </h3>
-                        <span className="text-xs text-gray-500 flex-shrink-0">
-                          {display.timestamp
-                            ? new Date(display.timestamp).toLocaleTimeString(
-                                "id-ID",
-                                {
-                                  hour: "2-digit",
-                                  minute: "2-digit",
-                                }
-                              )
-                            : ""}
-                        </span>
-                      </div>
-                      <p className="text-sm text-gray-500 truncate">
-                        {display.lastMsg}
-                      </p>
-                    </div>
-
-                    {/* Unread Badge */}
-                    {display.unread > 0 && (
-                      <div className="w-5 h-5 rounded-full bg-blue-600 text-white text-xs flex items-center justify-center flex-shrink-0">
-                        {display.unread}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              );
-            })
+            conversations.map((conv) => (
+              <ConversationItem
+                key={conv.id}
+                conv={conv}
+                isActive={conv.id === activeId}
+                userId={me?.id}
+                onClick={setActiveId}
+              />
+            ))
           )}
         </div>
       </div>
@@ -264,40 +225,13 @@ export default function ChatUI({
                   <p>Start the conversation</p>
                 </div>
               ) : (
-                messages.map((msg) => {
-                  const isOwn = msg.sender_id === me?.id;
-                  return (
-                    <div
-                      key={msg.id}
-                      className={`flex ${
-                        isOwn ? "justify-end" : "justify-start"
-                      }`}
-                    >
-                      <div
-                        className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
-                          isOwn
-                            ? "bg-blue-600 text-white"
-                            : "bg-white text-gray-800 border border-gray-200"
-                        }`}
-                      >
-                        <p className="text-sm break-words">{msg.text}</p>
-                        <p
-                          className={`text-xs mt-1 ${
-                            isOwn ? "text-blue-100" : "text-gray-500"
-                          }`}
-                        >
-                          {new Date(msg.created_at).toLocaleTimeString(
-                            "id-ID",
-                            {
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            }
-                          )}
-                        </p>
-                      </div>
-                    </div>
-                  );
-                })
+                messages.map((msg) => (
+                  <MessageBubble
+                    key={msg.id}
+                    msg={msg}
+                    isOwn={msg.sender_id === me?.id}
+                  />
+                ))
               )}
               <div ref={messagesEndRef} />
             </div>
@@ -368,4 +302,6 @@ export default function ChatUI({
       </div>
     </div>
   );
-}
+});
+
+export default ChatUI;

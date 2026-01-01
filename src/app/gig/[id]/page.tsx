@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { normalizeProductId } from "@/lib/productId";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL!;
 
@@ -26,6 +27,7 @@ export default async function GigDetail(props: {
   const basic = packages.basic || {};
   const standard = packages.standard || {};
   const premium = packages.premium || {};
+  const productIdForUrl = normalizeProductId(String(gig.id)).urlId;
 
   // Parse portfolio data
   let portfolio: any = {};

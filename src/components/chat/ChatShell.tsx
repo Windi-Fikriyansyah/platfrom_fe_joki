@@ -1,22 +1,32 @@
 "use client";
 
 import ChatUI from "@/components/chat/ChatUI";
+import { memo } from "react";
 
-export default function ChatShell(props: {
+interface ChatShellProps {
   initialMe: any;
   initialConversations: any[];
   initialActiveId: string | null;
   initialMessages: any[];
   initialPackage: string | null;
-}) {
-  // ChatUI kamu bisa disesuaikan agar menerima initial state
+}
+
+const ChatShell = memo(function ChatShell({
+  initialMe,
+  initialConversations,
+  initialActiveId,
+  initialMessages,
+  initialPackage,
+}: ChatShellProps) {
   return (
     <ChatUI
-      initialMe={props.initialMe}
-      initialConversations={props.initialConversations}
-      initialActiveId={props.initialActiveId}
-      initialMessages={props.initialMessages}
-      initialPackage={props.initialPackage}
+      initialMe={initialMe}
+      initialConversations={initialConversations}
+      initialActiveId={initialActiveId}
+      initialMessages={initialMessages}
+      initialPackage={initialPackage}
     />
   );
-}
+});
+
+export default ChatShell;
