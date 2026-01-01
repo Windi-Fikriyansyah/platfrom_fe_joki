@@ -77,10 +77,10 @@ export default function ChatUI({
     // Determine if current user is buyer or seller
     const isBuyer = me.id === conv.buyer_id;
     const other = isBuyer ? conv.seller : conv.buyer;
-    
+
     const otherName = getDisplayName(other);
     const otherAvatar = getAvatarInitial(other);
-    
+
     return {
       name: otherName,
       avatar: otherAvatar,
@@ -269,7 +269,9 @@ export default function ChatUI({
                   return (
                     <div
                       key={msg.id}
-                      className={`flex ${isOwn ? "justify-end" : "justify-start"}`}
+                      className={`flex ${
+                        isOwn ? "justify-end" : "justify-start"
+                      }`}
                     >
                       <div
                         className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
@@ -284,10 +286,13 @@ export default function ChatUI({
                             isOwn ? "text-blue-100" : "text-gray-500"
                           }`}
                         >
-                          {new Date(msg.created_at).toLocaleTimeString("id-ID", {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })}
+                          {new Date(msg.created_at).toLocaleTimeString(
+                            "id-ID",
+                            {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            }
+                          )}
                         </p>
                       </div>
                     </div>

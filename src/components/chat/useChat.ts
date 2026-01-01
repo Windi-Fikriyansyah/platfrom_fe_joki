@@ -4,7 +4,10 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { apiFetch } from "@/lib/api";
 import type { Conversation, Me, Message, WSIncoming } from "./types";
 
-const WS_BASE = process.env.NEXT_PUBLIC_WS_URL || process.env.NEXT_PUBLIC_WS_BASE_URL || "ws://localhost:8080";
+const WS_BASE =
+  process.env.NEXT_PUBLIC_WS_URL ||
+  process.env.NEXT_PUBLIC_WS_BASE_URL ||
+  "ws://localhost:8080";
 
 function updateLastMessage(
   convs: Conversation[],
@@ -189,7 +192,9 @@ export function useChat(initial?: {
       created_at: new Date().toISOString(),
     };
 
-    console.log(`[SendMessage] Sending message to conversation: ${currentActiveId}`);
+    console.log(
+      `[SendMessage] Sending message to conversation: ${currentActiveId}`
+    );
 
     setMessages((prev) => dedupById([...prev, temp]));
     setConversations((prev) => updateLastMessage(prev, temp));
@@ -207,11 +212,13 @@ export function useChat(initial?: {
 
       // Ensure we have valid data
       if (!res.success || !res.data) {
-        throw new Error(`Invalid response: success=${res.success}, has data=${!!res.data}`);
+        throw new Error(
+          `Invalid response: success=${res.success}, has data=${!!res.data}`
+        );
       }
 
       const realMessage = res.data;
-      
+
       console.log(
         `[SendMessage] Replacing temp message ${temp.id} with real message ${realMessage.id}`
       );
@@ -225,7 +232,7 @@ export function useChat(initial?: {
         );
         return updated;
       });
-      
+
       setConversations((prev) => updateLastMessage(prev, realMessage));
 
       // Mark as read
@@ -259,124 +266,124 @@ export function useChat(initial?: {
   }, []);
 
   const connectWS = useCallback(() => {
-      if (!me?.id) {
-        setWsConnected(false);
-        return;
+    if (!me?.id) {
+      setWsConnected(false);
+      return;
+    }
+
+    // Close existing connection
+    closeWS();
+    manualCloseRef.current = false;
+    backoffRef.current = 800;
+
+    // Ensure ws:// or wss:// scheme
+    const base = WS_BASE.replace(/^http/, "ws");
+    const url = `${base}/ws/chat?user_id=${encodeURIComponent(me.id)}`;
+    const ws = new WebSocket(url);
+    wsRef.current = ws;
+    setWsConnected(false);
+
+    ws.onopen = () => {
+      setWsConnected(true);
+      backoffRef.current = 800; // Reset backoff on successful connection
+    };
+
+    ws.onmessage = (ev) => {
+      try {
+        const payload: WSIncoming & any = JSON.parse(ev.data);
+
+        // Support both legacy "message" and backend "new_message" payloads
+        let msg: Message | undefined;
+        if (payload.type === "message") msg = payload.data;
+        else if (payload.type === "new_message") msg = payload.message;
+
+        if (msg) {
+          console.log(
+            `[WebSocket] Received message for conversation: ${msg.conversation_id}, activeIdRef: ${activeIdRef.current}`
+          );
+
+          // Update conversations list and unread counts
+          setConversations((prev) => {
+            const updated = updateLastMessage(prev, msg as Message);
+
+            return updated.map((c) => {
+              if (c.id !== msg!.conversation_id) return c;
+
+              const mine = me?.id && msg!.sender_id === me.id;
+              const isActive = activeIdRef.current === msg!.conversation_id;
+
+              // Own message or viewing the conversation: unread = 0
+              if (mine || isActive) {
+                console.log(
+                  `[WebSocket] Clearing unread for ${c.id} (mine=${mine}, isActive=${isActive})`
+                );
+                if (isActive) {
+                  scheduleMarkRead(msg!.conversation_id, msg!.id);
+                }
+                return { ...c, unread_count: 0 };
+              }
+
+              // Incoming message in inactive conversation: increment unread
+              const newUnread = (c.unread_count || 0) + 1;
+              console.log(
+                `[WebSocket] Incrementing unread for ${c.id} from ${
+                  c.unread_count || 0
+                } to ${newUnread}`
+              );
+              return { ...c, unread_count: newUnread };
+            });
+          });
+
+          // If message belongs to active conversation, append to messages
+          if (msg.conversation_id === activeIdRef.current) {
+            console.log(
+              `[WebSocket] Adding message to active conversation: ${activeIdRef.current}`
+            );
+            setMessages((prev) => {
+              const exists = prev.some((m) => m.id === msg!.id);
+              if (exists) {
+                console.log(
+                  `[WebSocket] Message already exists, skipping: ${msg!.id}`
+                );
+                return prev;
+              }
+              return dedupById([...prev, msg!]);
+            });
+          } else {
+            console.log(
+              `[WebSocket] Message is not for active conversation, ignoring: conv ${msg.conversation_id} vs active ${activeIdRef.current}`
+            );
+          }
+        } else if (payload.type === "ping") {
+          // Send pong response
+          try {
+            ws.send(JSON.stringify({ type: "pong" }));
+          } catch {}
+        }
+      } catch (e) {
+        console.error("WS parse error:", e);
       }
+    };
 
-      // Close existing connection
-      closeWS();
-      manualCloseRef.current = false;
-      backoffRef.current = 800;
+    ws.onerror = (error) => {
+      console.error("WebSocket error:", error);
+      setWsConnected(false);
+    };
 
-      // Ensure ws:// or wss:// scheme
-      const base = WS_BASE.replace(/^http/, "ws");
-      const url = `${base}/ws/chat?user_id=${encodeURIComponent(me.id)}`;
-      const ws = new WebSocket(url);
-      wsRef.current = ws;
+    ws.onclose = () => {
+      wsRef.current = null;
       setWsConnected(false);
 
-      ws.onopen = () => {
-        setWsConnected(true);
-        backoffRef.current = 800; // Reset backoff on successful connection
-      };
+      if (manualCloseRef.current) return;
 
-      ws.onmessage = (ev) => {
-        try {
-          const payload: WSIncoming & any = JSON.parse(ev.data);
+      const wait = backoffRef.current;
+      backoffRef.current = Math.min(backoffRef.current * 1.6, 8000);
 
-          // Support both legacy "message" and backend "new_message" payloads
-          let msg: Message | undefined;
-          if (payload.type === "message") msg = payload.data;
-          else if (payload.type === "new_message") msg = payload.message;
-
-          if (msg) {
-            console.log(
-              `[WebSocket] Received message for conversation: ${msg.conversation_id}, activeIdRef: ${activeIdRef.current}`
-            );
-
-            // Update conversations list and unread counts
-            setConversations((prev) => {
-              const updated = updateLastMessage(prev, msg as Message);
-
-              return updated.map((c) => {
-                if (c.id !== msg!.conversation_id) return c;
-
-                const mine = me?.id && msg!.sender_id === me.id;
-                const isActive = activeIdRef.current === msg!.conversation_id;
-
-                // Own message or viewing the conversation: unread = 0
-                if (mine || isActive) {
-                  console.log(
-                    `[WebSocket] Clearing unread for ${c.id} (mine=${mine}, isActive=${isActive})`
-                  );
-                  if (isActive) {
-                    scheduleMarkRead(msg!.conversation_id, msg!.id);
-                  }
-                  return { ...c, unread_count: 0 };
-                }
-
-                // Incoming message in inactive conversation: increment unread
-                const newUnread = (c.unread_count || 0) + 1;
-                console.log(
-                  `[WebSocket] Incrementing unread for ${c.id} from ${c.unread_count || 0} to ${newUnread}`
-                );
-                return { ...c, unread_count: newUnread };
-              });
-            });
-
-            // If message belongs to active conversation, append to messages
-            if (msg.conversation_id === activeIdRef.current) {
-              console.log(
-                `[WebSocket] Adding message to active conversation: ${activeIdRef.current}`
-              );
-              setMessages((prev) => {
-                const exists = prev.some((m) => m.id === msg!.id);
-                if (exists) {
-                  console.log(
-                    `[WebSocket] Message already exists, skipping: ${msg!.id}`
-                  );
-                  return prev;
-                }
-                return dedupById([...prev, msg!]);
-              });
-            } else {
-              console.log(
-                `[WebSocket] Message is not for active conversation, ignoring: conv ${msg.conversation_id} vs active ${activeIdRef.current}`
-              );
-            }
-          } else if (payload.type === "ping") {
-            // Send pong response
-            try {
-              ws.send(JSON.stringify({ type: "pong" }));
-            } catch {}
-          }
-        } catch (e) {
-          console.error("WS parse error:", e);
-        }
-      };
-
-      ws.onerror = (error) => {
-        console.error("WebSocket error:", error);
-        setWsConnected(false);
-      };
-
-      ws.onclose = () => {
-        wsRef.current = null;
-        setWsConnected(false);
-
-        if (manualCloseRef.current) return;
-
-        const wait = backoffRef.current;
-        backoffRef.current = Math.min(backoffRef.current * 1.6, 8000);
-
-        reconnectTimerRef.current = window.setTimeout(() => {
-          connectWS();
-        }, wait);
-      };
-    },
-    [me?.id, scheduleMarkRead, closeWS]
-  );
+      reconnectTimerRef.current = window.setTimeout(() => {
+        connectWS();
+      }, wait);
+    };
+  }, [me?.id, scheduleMarkRead, closeWS]);
 
   // Lifecycle
   useEffect(() => {
@@ -408,7 +415,9 @@ export function useChat(initial?: {
     setConversations((prev) =>
       prev.map((c) => {
         if (c.id !== activeId) return c;
-        console.log(`[Effect] Opening conversation ${activeId}, clearing unread`);
+        console.log(
+          `[Effect] Opening conversation ${activeId}, clearing unread`
+        );
         return { ...c, unread_count: 0 };
       })
     );
