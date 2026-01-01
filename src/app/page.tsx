@@ -1,9 +1,31 @@
 import Link from "next/link";
 import GigCard from "@/components/GigCard";
 import FreelancerCard from "@/components/FreelancerCard";
-import { gigs, freelancers, categories } from "@/lib/mock";
 
-export default function HomePage() {
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL!;
+
+async function getHomeData() {
+  const [productRes, categoryRes] = await Promise.all([
+    fetch(`${API_BASE}/products`, { cache: "no-store" }),
+    fetch(`${API_BASE}/categories`, { cache: "no-store" }),
+  ]);
+
+  if (!productRes.ok || !categoryRes.ok) {
+    throw new Error("Gagal mengambil data homepage");
+  }
+
+  const productJson = await productRes.json();
+  const categoryJson = await categoryRes.json();
+
+  return {
+    gigs: productJson.data ?? [],
+    categories: categoryJson.data ?? [],
+  };
+}
+
+export default async function HomePage() {
+  const { gigs, categories } = await getHomeData();
+
   return (
     <div>
       <section className="mx-auto w-full max-w-7xl px-3 sm:px-4 md:px-6 lg:px-8 pt-4 sm:pt-6 md:pt-8 lg:pt-10 pb-6 md:pb-8">
@@ -85,11 +107,16 @@ export default function HomePage() {
                   { k: "Layanan", v: "6.4K+" },
                   { k: "Rating", v: "4.8" },
                 ].map((x) => (
-                  <div key={x.k} className="rounded-lg sm:rounded-2xl border bg-white p-3 sm:p-4">
+                  <div
+                    key={x.k}
+                    className="rounded-lg sm:rounded-2xl border bg-white p-3 sm:p-4"
+                  >
                     <div className="text-[11px] sm:text-xs font-semibold text-black/50">
                       {x.k}
                     </div>
-                    <div className="mt-1 text-base sm:text-lg font-extrabold">{x.v}</div>
+                    <div className="mt-1 text-base sm:text-lg font-extrabold">
+                      {x.v}
+                    </div>
                   </div>
                 ))}
               </div>
@@ -108,7 +135,9 @@ export default function HomePage() {
       <section className="mx-auto w-full max-w-7xl px-3 sm:px-4 md:px-6 lg:px-8 py-6 sm:py-8 md:py-10">
         <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-2 sm:gap-3">
           <div>
-            <h2 className="text-xl sm:text-2xl font-extrabold">Layanan Populer</h2>
+            <h2 className="text-xl sm:text-2xl font-extrabold">
+              Layanan Populer
+            </h2>
             <p className="mt-1 text-xs sm:text-sm text-black/60">
               Pendampingan yang paling sering dipakai mahasiswa.
             </p>
@@ -122,7 +151,7 @@ export default function HomePage() {
         </div>
 
         <div className="mt-4 sm:mt-6 grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
-          {gigs.slice(0, 8).map((g) => (
+          {gigs.map((g: any) => (
             <GigCard key={g.id} gig={g} />
           ))}
         </div>
@@ -132,7 +161,9 @@ export default function HomePage() {
         <div className="rounded-2xl sm:rounded-3xl border bg-white p-4 sm:p-6 md:p-8">
           <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-2 md:gap-3">
             <div>
-              <h2 className="text-xl sm:text-2xl font-extrabold">Mentor Terbaik</h2>
+              <h2 className="text-xl sm:text-2xl font-extrabold">
+                Mentor Terbaik
+              </h2>
               <p className="mt-1 text-xs sm:text-sm text-black/60">
                 Pilih mentor sesuai kebutuhan skripsimu.
               </p>
@@ -145,11 +176,7 @@ export default function HomePage() {
             </Link>
           </div>
 
-          <div className="mt-4 sm:mt-6 grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
-            {freelancers.map((f) => (
-              <FreelancerCard key={f.id} f={f} />
-            ))}
-          </div>
+          <div className="mt-4 sm:mt-6 grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4"></div>
         </div>
       </section>
     </div>

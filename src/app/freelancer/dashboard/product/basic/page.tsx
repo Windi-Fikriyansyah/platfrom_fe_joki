@@ -11,7 +11,6 @@ import {
   Package,
   FolderOpen,
   ChevronRight,
-  ChevronDown,
   PlayCircle,
 } from "lucide-react";
 
@@ -53,15 +52,20 @@ type PortfolioItem = {
   preview: string;
   description: string;
   fileName: string;
+  _file?: File; // ✅ penting biar TS tidak error (dipakai saat upload)
 };
 
 export default function ProductBasicPage() {
   const router = useRouter();
   const { showToast } = useToast();
+
   const [showReviewConfirm, setShowReviewConfirm] = useState(false);
+
   const inputCoverRef = useRef<HTMLInputElement | null>(null);
+  const portfolioInputRef = useRef<HTMLInputElement | null>(null);
 
   const [viewMode, setViewMode] = useState<ViewMode>("main");
+
   const [systemName, setSystemName] = useState<string>("");
   const [photoUrl, setPhotoUrl] = useState<string | null>(null);
 
@@ -83,17 +87,16 @@ export default function ProductBasicPage() {
   // form fields
   const [title, setTitle] = useState("");
   const [kategori, setSubcategory] = useState("");
-  const [priceDigits, setPriceDigits] = useState(""); // contoh: "1500000"
+  const [priceDigits, setPriceDigits] = useState("");
 
-  // extra fields
-  const [description, setDescription] = useState(""); // <- DESKRIPSI (visibility)
+  // visibility desc
+  const [description, setDescription] = useState("");
   const MAX_DESC = 5000;
 
-  // accordion states lain (packages)
-  const [packagesOpen] = useState(false); // sudah diganti ke halaman khusus
+  // ringkasan paket
   const [packagesNote, setPackagesNote] = useState("");
 
-  // STATE UNTUK HALAMAN INFORMASI PAKET
+  // paket state
   const [basicTitle, setBasicTitle] = useState("Basic");
   const [standardTitle, setStandardTitle] = useState("Standard");
   const [premiumTitle, setPremiumTitle] = useState("Premium");
@@ -118,17 +121,15 @@ export default function ProductBasicPage() {
   const [standardBenefits, setStandardBenefits] = useState<string[]>([""]);
   const [premiumBenefits, setPremiumBenefits] = useState<string[]>([""]);
 
-  // ===== PORTFOLIO STATE =====
+  // portfolio
   const [portfolioItems, setPortfolioItems] = useState<PortfolioItem[]>([]);
   const [portfolioVideoUrl, setPortfolioVideoUrl] = useState("");
-  const portfolioInputRef = useRef<HTMLInputElement | null>(null);
 
   const [coverUrl, setCoverUrl] = useState<string>("");
 
   const MAX_PORTFOLIO_IMAGES = 30;
   const [saving, setSaving] = useState(false);
 
-  // RINGKASAN PAKET UNTUK DITAMPILKAN DI HALAMAN UTAMA
   function buildPackagesNote() {
     const prices = [
       { label: basicTitle || "Basic", digits: basicPriceDigits },
@@ -152,13 +153,8 @@ export default function ProductBasicPage() {
   }
 
   useEffect(() => {
-    // setiap ganti view (main <-> visibility <-> packages <-> portfolio), scroll ke atas
     if (typeof window !== "undefined") {
-      window.scrollTo({
-        top: 0,
-        left: 0,
-        behavior: "smooth",
-      });
+      window.scrollTo({ top: 0, left: 0, behavior: "smooth" });
     }
   }, [viewMode]);
 
@@ -170,7 +166,7 @@ export default function ProductBasicPage() {
       try {
         const resp = await fetch(`${API}/freelancer/profile/me`, {
           method: "GET",
-          credentials: "include", // penting, karena JWT di cookie
+          credentials: "include",
         });
 
         const data: ApiResp<FreelancerProfile> = await resp
@@ -178,12 +174,8 @@ export default function ProductBasicPage() {
           .catch(() => ({ success: false } as any));
 
         if (resp.ok && data.success && data.data) {
-          if (data.data.system_name) {
-            setSystemName(data.data.system_name);
-          }
-          if (data.data.photo_url) {
-            setPhotoUrl(data.data.photo_url);
-          }
+          if (data.data.system_name) setSystemName(data.data.system_name);
+          if (data.data.photo_url) setPhotoUrl(data.data.photo_url);
         }
       } catch (err) {
         console.error("Gagal mengambil profil freelancer:", err);
@@ -191,10 +183,22 @@ export default function ProductBasicPage() {
     })();
   }, []);
 
+  function revokeIfBlob(url: string | null) {
+    if (url && url.startsWith("blob:")) URL.revokeObjectURL(url);
+  }
+
+  // cleanup blob saat unmount
+  useEffect(() => {
+    return () => {
+      revokeIfBlob(coverPreview);
+      revokeIfBlob(originalCoverPreview);
+      portfolioItems.forEach((p) => revokeIfBlob(p.preview));
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   async function uploadCoverIfNeeded(): Promise<string> {
     if (!coverFile) return coverUrl;
-
-    // sudah pernah upload di sesi ini
     if (coverUrl) return coverUrl;
 
     const fd = new FormData();
@@ -214,10 +218,6 @@ export default function ProductBasicPage() {
 
     setCoverUrl(data.url as string);
     return data.url as string;
-  }
-
-  function revokeIfBlob(url: string | null) {
-    if (url && url.startsWith("blob:")) URL.revokeObjectURL(url);
   }
 
   function handleCoverChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -257,9 +257,10 @@ export default function ProductBasicPage() {
     setCoverTransform(DEFAULT_TRANSFORM);
 
     if (inputCoverRef.current) inputCoverRef.current.value = "";
+    setCoverUrl("");
   }
 
-  // PORTFOLIO handlers
+  // portfolio handlers
   function handlePortfolioFiles(e: React.ChangeEvent<HTMLInputElement>) {
     const files = Array.from(e.target.files ?? []);
     if (!files.length) return;
@@ -280,7 +281,6 @@ export default function ProductBasicPage() {
       return next;
     });
 
-    // reset input supaya bisa upload file yang sama lagi kalau mau
     if (e.target) e.target.value = "";
   }
 
@@ -308,12 +308,13 @@ export default function ProductBasicPage() {
       body: fd,
     });
 
-    const data = await resp.json();
-    if (!data.success) throw new Error(data.message);
-    return data.url; // URL dari server
+    const data = await resp.json().catch(() => null);
+    if (!resp.ok || !data?.success) {
+      throw new Error(data?.message || "Gagal upload portfolio image");
+    }
+    return data.url as string;
   }
 
-  // style transform untuk <img> preview (upload box + preview)
   const coverImgStyle: React.CSSProperties = coverPreview
     ? {
         transform: `translate(${coverTransform.pos.x}px, ${
@@ -333,95 +334,90 @@ export default function ProductBasicPage() {
       return;
     }
 
-    const finalCoverUrl = await uploadCoverIfNeeded();
-
-    // BERSIHKAN ANGKA DULU
-    const basePriceNum = Number(onlyDigits(priceDigits) || "0");
-
-    const basicPriceNum = Number(onlyDigits(basicPriceDigits) || "0");
-    const standardPriceNum = Number(onlyDigits(standardPriceDigits) || "0");
-    const premiumPriceNum = Number(onlyDigits(premiumPriceDigits) || "0");
-
-    const basicDeliveryNum = Number(onlyDigits(basicDelivery) || "0");
-    const standardDeliveryNum = Number(onlyDigits(standardDelivery) || "0");
-    const premiumDeliveryNum = Number(onlyDigits(premiumDelivery) || "0");
-
-    const basicRevisionsNum = Number(onlyDigits(basicRevisions) || "0");
-    const standardRevisionsNum = Number(onlyDigits(standardRevisions) || "0");
-    const premiumRevisionsNum = Number(onlyDigits(premiumRevisions) || "0");
-
-    // BERSIHKAN BENEFITS (trim + buang kosong)
-    const cleanBasicBenefits = basicBenefits
-      .map((b) => b.trim())
-      .filter(Boolean);
-
-    const cleanStandardBenefits = standardBenefits
-      .map((b) => b.trim())
-      .filter(Boolean);
-
-    const cleanPremiumBenefits = premiumBenefits
-      .map((b) => b.trim())
-      .filter(Boolean);
-
-    const uploadedImages = await Promise.all(
-      portfolioItems.map(async (item) => {
-        const file = item._file;
-        const url = await uploadPortfolioImage(file);
-        return {
-          file_name: url,
-          description: item.description.trim(),
-        };
-      })
-    );
-
-    const payload = {
-      title: title.trim(),
-      category: kategori,
-      base_price: basePriceNum,
-
-      visibility_description: description.trim(),
-      cover_url: finalCoverUrl,
-      cover_transform: coverTransform,
-
-      basic: {
-        title: (basicTitle || "Basic").trim(),
-        description: basicDesc.trim(),
-        delivery_days: basicDeliveryNum,
-        revisions: basicRevisionsNum,
-        price: basicPriceNum,
-        benefits: cleanBasicBenefits,
-      },
-      standard: {
-        title: (standardTitle || "Standard").trim(),
-        description: standardDesc.trim(),
-        delivery_days: standardDeliveryNum,
-        revisions: standardRevisionsNum,
-        price: standardPriceNum,
-        benefits: cleanStandardBenefits,
-      },
-      premium: {
-        title: (premiumTitle || "Premium").trim(),
-        description: premiumDesc.trim(),
-        delivery_days: premiumDeliveryNum,
-        revisions: premiumRevisionsNum,
-        price: premiumPriceNum,
-        benefits: cleanPremiumBenefits,
-      },
-
-      portfolio_video_url: portfolioVideoUrl.trim(),
-      portfolio_images: uploadedImages,
-      status, // "draft" atau "review"
-    };
-
     try {
       setSaving(true);
+
+      const finalCoverUrl = await uploadCoverIfNeeded();
+
+      const basePriceNum = Number(onlyDigits(priceDigits) || "0");
+
+      const basicPriceNum = Number(onlyDigits(basicPriceDigits) || "0");
+      const standardPriceNum = Number(onlyDigits(standardPriceDigits) || "0");
+      const premiumPriceNum = Number(onlyDigits(premiumPriceDigits) || "0");
+
+      const basicDeliveryNum = Number(onlyDigits(basicDelivery) || "0");
+      const standardDeliveryNum = Number(onlyDigits(standardDelivery) || "0");
+      const premiumDeliveryNum = Number(onlyDigits(premiumDelivery) || "0");
+
+      const basicRevisionsNum = Number(onlyDigits(basicRevisions) || "0");
+      const standardRevisionsNum = Number(onlyDigits(standardRevisions) || "0");
+      const premiumRevisionsNum = Number(onlyDigits(premiumRevisions) || "0");
+
+      const cleanBasicBenefits = basicBenefits
+        .map((b) => b.trim())
+        .filter(Boolean);
+      const cleanStandardBenefits = standardBenefits
+        .map((b) => b.trim())
+        .filter(Boolean);
+      const cleanPremiumBenefits = premiumBenefits
+        .map((b) => b.trim())
+        .filter(Boolean);
+
+      const uploadedImages = await Promise.all(
+        portfolioItems.map(async (item) => {
+          const file = item._file;
+          if (!file) throw new Error("File portofolio tidak ditemukan.");
+          const url = await uploadPortfolioImage(file);
+          return {
+            file_name: url,
+            description: item.description.trim(),
+          };
+        })
+      );
+
+      const payload = {
+        title: title.trim(),
+        category: kategori,
+        base_price: basePriceNum,
+
+        visibility_description: description.trim(),
+        cover_url: finalCoverUrl,
+        cover_transform: coverTransform,
+
+        basic: {
+          title: (basicTitle || "Basic").trim(),
+          description: basicDesc.trim(),
+          delivery_days: basicDeliveryNum,
+          revisions: basicRevisionsNum,
+          price: basicPriceNum,
+          benefits: cleanBasicBenefits,
+        },
+        standard: {
+          title: (standardTitle || "Standard").trim(),
+          description: standardDesc.trim(),
+          delivery_days: standardDeliveryNum,
+          revisions: standardRevisionsNum,
+          price: standardPriceNum,
+          benefits: cleanStandardBenefits,
+        },
+        premium: {
+          title: (premiumTitle || "Premium").trim(),
+          description: premiumDesc.trim(),
+          delivery_days: premiumDeliveryNum,
+          revisions: premiumRevisionsNum,
+          price: premiumPriceNum,
+          benefits: cleanPremiumBenefits,
+        },
+
+        portfolio_video_url: portfolioVideoUrl.trim(),
+        portfolio_images: uploadedImages,
+        status,
+      };
 
       const resp = await fetch(`${API}/freelancer/products/basic`, {
         method: "POST",
         credentials: "include",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
 
@@ -450,17 +446,16 @@ export default function ProductBasicPage() {
   }
 
   // =========================
-  // VIEW: VISIBILITY (DESKRIPSI)
+  // VIEW: VISIBILITY
   // =========================
   if (viewMode === "visibility") {
     return (
       <>
-        <div className="min-h-screen bg-gray-50 py-8 px-6">
-          <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8">
+        <div className="min-h-screen bg-gray-50 py-6 sm:py-8 px-4 sm:px-6">
+          <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8">
             <div className="lg:col-span-9">
               <div className="bg-white rounded-xl shadow-sm border overflow-hidden">
-                {/* HEADER DI ATAS DESKRIPSI (ARROW + JUDUL) */}
-                <div className="p-5 sm:p-6 border-b">
+                <div className="p-4 sm:p-6 border-b">
                   <div className="flex items-center gap-3 min-w-0">
                     <button
                       type="button"
@@ -495,8 +490,7 @@ export default function ProductBasicPage() {
                   </div>
                 </div>
 
-                {/* SUB-HEADER DESKRIPSI */}
-                <div className="p-5 sm:p-6 border-b flex items-center gap-3">
+                <div className="p-4 sm:p-6 border-b flex items-center gap-3">
                   <div className="h-10 w-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
                     <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
                       <path
@@ -517,8 +511,7 @@ export default function ProductBasicPage() {
                   </div>
                 </div>
 
-                {/* CONTENT DESKRIPSI */}
-                <div className="p-5 sm:p-6">
+                <div className="p-4 sm:p-6">
                   <div className="text-sm text-gray-700 font-semibold">
                     Jelaskan detail pekerjaan atau layanan Anda.{" "}
                     <span className="text-blue-600 font-semibold">
@@ -537,14 +530,14 @@ export default function ProductBasicPage() {
                         setDescription(e.target.value.slice(0, MAX_DESC))
                       }
                       placeholder="Masukkan Deskripsi"
-                      className="w-full min-h-[260px] rounded-xl border bg-white p-4 text-sm outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-400"
+                      className="w-full min-h-[240px] sm:min-h-[260px] rounded-xl border bg-white p-4 text-sm outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-400"
                     />
                     <div className="mt-2 text-xs text-gray-500 flex items-center justify-end">
                       {description.length}/{MAX_DESC}
                     </div>
                   </div>
 
-                  <div className="mt-6 flex items-center justify-between gap-3">
+                  <div className="mt-6 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
                     <button
                       type="button"
                       onClick={() => setViewMode("main")}
@@ -566,7 +559,6 @@ export default function ProductBasicPage() {
           </div>
         </div>
 
-        {/* MODAL */}
         <ImageEditModal
           src={originalCoverPreview || ""}
           open={showCoverModal}
@@ -579,16 +571,15 @@ export default function ProductBasicPage() {
   }
 
   // =========================
-  // VIEW: INFORMASI PAKET
+  // VIEW: PACKAGES
   // =========================
   if (viewMode === "packages") {
     return (
       <>
-        <div className="min-h-screen bg-gray-50 py-8 px-6">
+        <div className="min-h-screen bg-gray-50 py-6 sm:py-8 px-4 sm:px-6">
           <div className="max-w-7xl mx-auto">
             <div className="bg-white rounded-xl shadow-sm border overflow-hidden">
-              {/* HEADER */}
-              <div className="p-5 sm:p-6 border-b">
+              <div className="p-4 sm:p-6 border-b">
                 <div className="flex items-center gap-3 min-w-0">
                   <button
                     type="button"
@@ -618,8 +609,7 @@ export default function ProductBasicPage() {
                 </div>
               </div>
 
-              {/* BODY */}
-              <div className="p-5 sm:p-6">
+              <div className="p-4 sm:p-6">
                 <div className="text-sm text-gray-600">
                   Buat paket <span className="font-semibold">Basic</span>,{" "}
                   <span className="font-semibold">Standard</span>, dan{" "}
@@ -635,7 +625,7 @@ export default function ProductBasicPage() {
                   {/* BASIC */}
                   <div className="border rounded-xl p-4 bg-gray-50/70 flex flex-col gap-3">
                     <div className="flex items-center justify-between gap-2">
-                      <div>
+                      <div className="min-w-0">
                         <div className="text-[11px] uppercase tracking-wide text-gray-500">
                           Paket
                         </div>
@@ -655,7 +645,6 @@ export default function ProductBasicPage() {
                     </div>
 
                     <div className="space-y-3">
-                      {/* HARGA */}
                       <div>
                         <label className="block text-xs font-medium text-gray-700 mb-1">
                           Harga Paket
@@ -676,7 +665,6 @@ export default function ProductBasicPage() {
                         </div>
                       </div>
 
-                      {/* DURASI */}
                       <div>
                         <label className="block text-xs font-medium text-gray-700 mb-1">
                           Durasi Pengerjaan (hari)
@@ -689,7 +677,6 @@ export default function ProductBasicPage() {
                         />
                       </div>
 
-                      {/* REVISI */}
                       <div>
                         <label className="block text-xs font-medium text-gray-700 mb-1">
                           Jumlah Revisi
@@ -702,7 +689,6 @@ export default function ProductBasicPage() {
                         />
                       </div>
 
-                      {/* DESKRIPSI */}
                       <div>
                         <label className="block text-xs font-medium text-gray-700 mb-1">
                           Deskripsi Singkat
@@ -715,7 +701,6 @@ export default function ProductBasicPage() {
                         />
                       </div>
 
-                      {/* APA YANG AKAN DITERIMA PEMBERI KERJA */}
                       <div className="mt-2 border rounded-lg bg-white">
                         <div className="px-3 py-2 border-b text-[13px] font-semibold text-gray-800">
                           Apa yang akan diterima pemberi kerja
@@ -782,7 +767,7 @@ export default function ProductBasicPage() {
                   {/* STANDARD */}
                   <div className="border rounded-xl p-4 bg-blue-50/70 flex flex-col gap-3">
                     <div className="flex items-center justify-between gap-2">
-                      <div>
+                      <div className="min-w-0">
                         <div className="text-[11px] uppercase tracking-wide text-gray-500">
                           Paket
                         </div>
@@ -803,7 +788,6 @@ export default function ProductBasicPage() {
                     </div>
 
                     <div className="space-y-3">
-                      {/* HARGA */}
                       <div>
                         <label className="block text-xs font-medium text-gray-700 mb-1">
                           Harga Paket
@@ -824,7 +808,6 @@ export default function ProductBasicPage() {
                         </div>
                       </div>
 
-                      {/* DURASI */}
                       <div>
                         <label className="block text-xs font-medium text-gray-700 mb-1">
                           Durasi Pengerjaan (hari)
@@ -837,7 +820,6 @@ export default function ProductBasicPage() {
                         />
                       </div>
 
-                      {/* REVISI */}
                       <div>
                         <label className="block text-xs font-medium text-gray-700 mb-1">
                           Jumlah Revisi
@@ -850,7 +832,6 @@ export default function ProductBasicPage() {
                         />
                       </div>
 
-                      {/* DESKRIPSI */}
                       <div>
                         <label className="block text-xs font-medium text-gray-700 mb-1">
                           Deskripsi Singkat
@@ -863,7 +844,6 @@ export default function ProductBasicPage() {
                         />
                       </div>
 
-                      {/* APA YANG AKAN DITERIMA PEMBERI KERJA */}
                       <div className="mt-2 border rounded-lg bg-white">
                         <div className="px-3 py-2 border-b text-[13px] font-semibold text-gray-800">
                           Apa yang akan diterima pemberi kerja
@@ -930,7 +910,7 @@ export default function ProductBasicPage() {
                   {/* PREMIUM */}
                   <div className="border rounded-xl p-4 bg-emerald-50/70 flex flex-col gap-3">
                     <div className="flex items-center justify-between gap-2">
-                      <div>
+                      <div className="min-w-0">
                         <div className="text-[11px] uppercase tracking-wide text-gray-500">
                           Paket
                         </div>
@@ -950,7 +930,6 @@ export default function ProductBasicPage() {
                     </div>
 
                     <div className="space-y-3">
-                      {/* HARGA */}
                       <div>
                         <label className="block text-xs font-medium text-gray-700 mb-1">
                           Harga Paket
@@ -971,7 +950,6 @@ export default function ProductBasicPage() {
                         </div>
                       </div>
 
-                      {/* DURASI */}
                       <div>
                         <label className="block text-xs font-medium text-gray-700 mb-1">
                           Durasi Pengerjaan (hari)
@@ -984,7 +962,6 @@ export default function ProductBasicPage() {
                         />
                       </div>
 
-                      {/* REVISI */}
                       <div>
                         <label className="block text-xs font-medium text-gray-700 mb-1">
                           Jumlah Revisi
@@ -997,7 +974,6 @@ export default function ProductBasicPage() {
                         />
                       </div>
 
-                      {/* DESKRIPSI */}
                       <div>
                         <label className="block text-xs font-medium text-gray-700 mb-1">
                           Deskripsi Singkat
@@ -1010,7 +986,6 @@ export default function ProductBasicPage() {
                         />
                       </div>
 
-                      {/* APA YANG AKAN DITERIMA PEMBERI KERJA */}
                       <div className="mt-2 border rounded-lg bg-white">
                         <div className="px-3 py-2 border-b text-[13px] font-semibold text-gray-800">
                           Apa yang akan diterima pemberi kerja
@@ -1075,7 +1050,7 @@ export default function ProductBasicPage() {
                   </div>
                 </div>
 
-                <div className="mt-6 flex items-center justify-between gap-3">
+                <div className="mt-6 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
                   <button
                     type="button"
                     onClick={() => setViewMode("main")}
@@ -1100,7 +1075,6 @@ export default function ProductBasicPage() {
           </div>
         </div>
 
-        {/* MODAL */}
         <ImageEditModal
           src={originalCoverPreview || ""}
           open={showCoverModal}
@@ -1113,17 +1087,16 @@ export default function ProductBasicPage() {
   }
 
   // =========================
-  // VIEW: PORTFOLIO (ALBUM)
+  // VIEW: PORTFOLIO
   // =========================
   if (viewMode === "portfolio") {
     const imageCount = portfolioItems.length;
 
     return (
       <>
-        <div className="min-h-screen bg-gray-50 py-8 px-6">
+        <div className="min-h-screen bg-gray-50 py-6 sm:py-8 px-4 sm:px-6">
           <div className="max-w-6xl mx-auto">
-            {/* TOP BAR */}
-            <div className="flex items-center justify-between gap-4 mb-6">
+            <div className="flex items-center justify-between gap-4 mb-5 sm:mb-6">
               <div className="flex items-center gap-3">
                 <button
                   type="button"
@@ -1142,57 +1115,53 @@ export default function ProductBasicPage() {
                   </svg>
                 </button>
                 <div>
-                  <h1 className="mt-1 text-xl font-bold text-gray-900">
+                  <h1 className="mt-1 text-lg sm:text-xl font-bold text-gray-900">
                     Album Portofolio
                   </h1>
                 </div>
               </div>
             </div>
 
-            {/* CARD PORTOFOLIO (GAMBAR) */}
             <div className="bg-white rounded-xl shadow-sm border overflow-hidden">
-              <div className="px-6 py-4 border-b flex items-center gap-3">
+              <div className="px-4 sm:px-6 py-4 border-b flex items-center gap-3">
                 <div className="h-10 w-10 rounded-full bg-blue-50 flex items-center justify-center text-blue-600">
                   <FolderOpen className="w-5 h-5" />
                 </div>
                 <div>
                   <div className="font-semibold text-gray-900">Portofolio</div>
                   <div className="text-xs text-gray-500">
-                    Pilih gambar yang mewakili pekerjaan Anda. Gambar tersebut
-                    akan ditampilkan pada produk pekerjaan Anda.
+                    Pilih gambar yang mewakili pekerjaan Anda.
                   </div>
                 </div>
               </div>
 
-              <div className="px-6 py-5 space-y-4">
-                <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="px-4 sm:px-6 py-5 space-y-4">
+                <div className="flex flex-col sm:flex-row flex-wrap items-start sm:items-center justify-between gap-3">
                   <div className="text-sm font-semibold text-gray-800">
                     Gambar ({imageCount} / {MAX_PORTFOLIO_IMAGES})
                   </div>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <input
-                      ref={portfolioInputRef}
-                      type="file"
-                      accept="image/*"
-                      multiple
-                      className="hidden"
-                      onChange={handlePortfolioFiles}
-                    />
 
-                    <button
-                      type="button"
-                      onClick={() => portfolioInputRef.current?.click()}
-                      className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-xs font-semibold text-white hover:bg-blue-700"
-                    >
-                      <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-blue-500/80">
-                        +
-                      </span>
-                      Upload foto pekerjaan
-                    </button>
-                  </div>
+                  <input
+                    ref={portfolioInputRef}
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    className="hidden"
+                    onChange={handlePortfolioFiles}
+                  />
+
+                  <button
+                    type="button"
+                    onClick={() => portfolioInputRef.current?.click()}
+                    className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-xs font-semibold text-white hover:bg-blue-700"
+                  >
+                    <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-blue-500/80">
+                      +
+                    </span>
+                    Upload foto pekerjaan
+                  </button>
                 </div>
 
-                {/* GRID GAMBAR */}
                 {imageCount === 0 ? (
                   <div className="border-2 border-dashed border-gray-200 rounded-xl px-6 py-10 text-center text-sm text-gray-500 bg-gray-50">
                     <div className="flex flex-col items-center gap-2">
@@ -1221,7 +1190,7 @@ export default function ProductBasicPage() {
                       </div>
                       <div className="text-xs text-gray-500 max-w-sm">
                         Upload hingga {MAX_PORTFOLIO_IMAGES} gambar berkualitas
-                        tinggi yang menunjukkan hasil pekerjaan terbaik Anda.
+                        tinggi.
                       </div>
                       <button
                         type="button"
@@ -1278,9 +1247,8 @@ export default function ProductBasicPage() {
               </div>
             </div>
 
-            {/* CARD VIDEO PORTOFOLIO */}
             <div className="mt-5 bg-white rounded-xl shadow-sm border overflow-hidden">
-              <div className="px-6 py-4 border-b flex items-center gap-3">
+              <div className="px-4 sm:px-6 py-4 border-b flex items-center gap-3">
                 <div className="h-10 w-10 rounded-full bg-amber-50 flex items-center justify-center text-amber-500">
                   <PlayCircle className="w-5 h-5" />
                 </div>
@@ -1289,13 +1257,12 @@ export default function ProductBasicPage() {
                     Video Portofolio
                   </div>
                   <div className="text-xs text-gray-500">
-                    Salin tautan video pekerjaan Anda dari YouTube untuk
-                    ditampilkan di halaman produk.
+                    Salin tautan video pekerjaan Anda dari YouTube.
                   </div>
                 </div>
               </div>
 
-              <div className="px-6 py-5">
+              <div className="px-4 sm:px-6 py-5">
                 <label className="block mb-2 text-sm font-medium text-gray-700">
                   Tautan video
                 </label>
@@ -1312,13 +1279,12 @@ export default function ProductBasicPage() {
               </div>
             </div>
 
-            {/* ACTIONS */}
             <div className="mt-6 flex justify-end">
               <button
                 type="button"
                 disabled={saving}
                 onClick={() => setViewMode("main")}
-                className="px-5 py-2.5 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed"
+                className="w-full sm:w-auto px-5 py-2.5 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 Simpan & Kembali
               </button>
@@ -1326,7 +1292,6 @@ export default function ProductBasicPage() {
           </div>
         </div>
 
-        {/* MODAL COVER (tetap dipakai dari halaman utama) */}
         <ImageEditModal
           src={originalCoverPreview || ""}
           open={showCoverModal}
@@ -1343,11 +1308,10 @@ export default function ProductBasicPage() {
   // =========================
   return (
     <>
-      <div className="min-h-screen bg-gray-50 py-10 px-6">
-        <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8">
-          {/* LEFT */}
+      <div className="min-h-screen bg-gray-50 py-8 sm:py-10 px-4 sm:px-6">
+        <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8">
           <div className="lg:col-span-9">
-            <div className="bg-white rounded-lg shadow p-6">
+            <div className="bg-white rounded-lg shadow p-4 sm:p-6">
               <div className="flex items-center text-sm text-gray-500 mb-6">
                 <Link
                   href="/freelancer/dashboard/product"
@@ -1361,7 +1325,9 @@ export default function ProductBasicPage() {
                 </span>
               </div>
 
-              <h2 className="text-xl font-semibold mb-4">Detail Pekerjaan</h2>
+              <h2 className="text-lg sm:text-xl font-semibold mb-4">
+                Detail Pekerjaan
+              </h2>
 
               <div className="space-y-2">
                 <label className="block text-sm font-medium text-gray-700">
@@ -1371,9 +1337,10 @@ export default function ProductBasicPage() {
                   </span>
                 </label>
 
-                <div className="flex items-start gap-4">
+                {/* ✅ responsive: mobile stack, desktop tetap */}
+                <div className="flex flex-col sm:flex-row items-start gap-4">
                   {/* BOX PREVIEW */}
-                  <label className="group cursor-pointer">
+                  <label className="group cursor-pointer w-full sm:w-auto">
                     <input
                       ref={inputCoverRef}
                       type="file"
@@ -1386,7 +1353,7 @@ export default function ProductBasicPage() {
                       className="
                         relative overflow-hidden rounded-xl bg-gray-50 border-2 border-dashed border-gray-200
                         hover:bg-gray-100 transition
-                        w-[320px] max-w-full
+                        w-full sm:w-[320px] max-w-full
                       "
                       style={{ aspectRatio: "16/10" }}
                     >
@@ -1400,7 +1367,7 @@ export default function ProductBasicPage() {
                             style={coverImgStyle}
                           />
 
-                          <div className="absolute top-2 right-2 flex gap-2 opacity-0 group-hover:opacity-100 transition">
+                          <div className="absolute top-2 right-2 flex gap-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition">
                             <button
                               type="button"
                               onClick={(e) => {
@@ -1462,7 +1429,7 @@ export default function ProductBasicPage() {
                   </label>
 
                   {/* INFO SAMPING */}
-                  <div className="flex-1 text-sm text-gray-600">
+                  <div className="w-full sm:flex-1 text-sm text-gray-600">
                     <div className="font-semibold text-gray-800">Panduan</div>
                     <ul className="mt-2 list-disc pl-5 space-y-1 text-xs text-gray-500">
                       <li>
@@ -1560,7 +1527,6 @@ export default function ProductBasicPage() {
                   </p>
 
                   <div className="mt-4 space-y-3">
-                    {/* VISIBILITY -> MASUK KE VIEW DESKRIPSI */}
                     <div className="border rounded-lg overflow-hidden">
                       <button
                         type="button"
@@ -1592,7 +1558,6 @@ export default function ProductBasicPage() {
                       </button>
                     </div>
 
-                    {/* PACKAGES */}
                     <div className="border rounded-lg overflow-hidden">
                       <button
                         type="button"
@@ -1621,7 +1586,6 @@ export default function ProductBasicPage() {
                       </button>
                     </div>
 
-                    {/* PORTFOLIO */}
                     <div className="border rounded-lg overflow-hidden">
                       <button
                         type="button"
@@ -1654,7 +1618,7 @@ export default function ProductBasicPage() {
               </div>
 
               {/* ACTIONS */}
-              <div className="mt-6 flex items-center justify-between gap-3">
+              <div className="mt-6 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
                 <button
                   onClick={() => router.back()}
                   className="px-4 py-2 border rounded-md"
@@ -1662,7 +1626,9 @@ export default function ProductBasicPage() {
                 >
                   Kembali
                 </button>
-                <div className="flex gap-3">
+
+                {/* ✅ responsive: tombol jadi stack di mobile, desktop tetap */}
+                <div className="flex flex-col sm:flex-row gap-3">
                   <button
                     type="button"
                     disabled={saving}
@@ -1684,9 +1650,9 @@ export default function ProductBasicPage() {
             </div>
           </div>
 
-          {/* RIGHT PREVIEW (CARD) */}
+          {/* RIGHT PREVIEW */}
           <aside className="lg:col-span-3">
-            <div className="sticky top-20">
+            <div className="lg:sticky lg:top-20">
               <h4 className="font-semibold text-sm text-gray-700 mb-3">
                 Preview Pekerjaan
               </h4>
@@ -1780,7 +1746,6 @@ export default function ProductBasicPage() {
         </div>
       </div>
 
-      {/* MODAL */}
       <ImageEditModal
         src={originalCoverPreview || ""}
         open={showCoverModal}
@@ -1788,9 +1753,10 @@ export default function ProductBasicPage() {
         onSave={handleSaveImageTransform}
         initialTransform={coverTransform}
       />
+
       {showReviewConfirm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          <div className="bg-white rounded-xl shadow-lg max-w-sm w-full mx-4 p-5">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+          <div className="bg-white rounded-xl shadow-lg max-w-sm w-full p-5">
             <h2 className="text-lg font-semibold text-gray-900 mb-2">
               Kirim untuk Ditinjau?
             </h2>

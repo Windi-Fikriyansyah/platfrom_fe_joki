@@ -4,7 +4,9 @@ export default function Footer() {
       <div className="mx-auto w-full max-w-7xl px-3 sm:px-4 md:px-6 lg:px-8 py-6 sm:py-8 md:py-10">
         <div className="grid gap-6 sm:gap-8 grid-cols-1 sm:grid-cols-2 md:grid-cols-4">
           <div>
-            <div className="font-extrabold text-base sm:text-lg">FastworkUI</div>
+            <div className="font-extrabold text-base sm:text-lg">
+              FastworkUI
+            </div>
             <p className="mt-2 text-xs sm:text-sm text-black/60">
               Marketplace jasa (UI demo). Cari freelancer, order, dan chat—semua
               dalam satu tempat.

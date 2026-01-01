@@ -9,7 +9,6 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    // allow public routes: root, search, and auth pages
     const publicPrefixes = ["/", "/search", "/auth"];
     if (
       publicPrefixes.some((p) => pathname === p || pathname.startsWith(p + "/"))
@@ -18,21 +17,21 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    // check token in localStorage
-    try {
-      const token = localStorage.getItem("jm_token");
-      if (!token) {
-        // redirect to login with next param
-        const next = encodeURIComponent(pathname + window.location.search);
-        router.replace(`/auth/login?next=${next}`);
-        return;
-      }
-      // optionally could validate token here
-      setReady(true);
-    } catch (e) {
-      router.replace("/auth/login");
-    }
-  }, [pathname, router]);
+    fetch("http://127.0.0.1:8080/api/me", {
+      credentials: "include",
+    })
+      .then((res) => {
+        if (!res.ok) {
+          const next = encodeURIComponent(pathname);
+          router.replace(`/auth/login?next=${next}`);
+          return;
+        }
+        setReady(true);
+      })
+      .catch(() => {
+        router.replace("/auth/login");
+      });
+  }, [pathname]);
 
   if (!ready) return null;
   return <>{children}</>;

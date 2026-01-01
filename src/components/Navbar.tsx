@@ -157,14 +157,14 @@ export default function Navbar() {
               Jobboard
             </Link>
             <Link
-              href="/dashboard"
+              href="/search"
               className="rounded-lg lg:rounded-xl px-2 lg:px-3 py-1.5 lg:py-2 text-xs lg:text-sm font-semibold hover:bg-black/5"
             >
               Layanan
             </Link>
 
             <Link
-              href="/chat/1"
+              href="/chat"
               className="relative flex items-center justify-center w-9 h-9 rounded-full hover:bg-black/5"
             >
               <MessageCircle
@@ -354,24 +354,6 @@ export default function Navbar() {
           </div>
         </div>
 
-        {/* Category Chips */}
-        <div className="-mx-3 px-3 sm:mx-0 sm:px-0 pb-2 sm:pb-3">
-          <div className="flex gap-1.5 overflow-x-auto no-scrollbar">
-            {categories.map((c) => (
-              <Link
-                key={c}
-                href={`/search?cat=${encodeURIComponent(c)}`}
-                className="shrink-0 rounded-full border px-2.5 py-1.5 text-[11px] sm:text-xs font-semibold text-black/70 hover:bg-black/5"
-              >
-                {c}
-              </Link>
-            ))}
-          </div>
-          <div className="mt-1 text-[10px] sm:text-[11px] text-black/45 md:hidden">
-            Geser untuk lihat kategori lainnya →
-          </div>
-        </div>
-
         {/* Mobile dropdown (dibesarkan + icon + nama) */}
         {open && (
           <div id="mobile-menu" className="md:hidden pb-3">
@@ -387,7 +369,7 @@ export default function Navbar() {
                 </Link>
 
                 <Link
-                  href="/chat/1"
+                  href="/chat"
                   onClick={() => setOpen(false)}
                   className="h-11 rounded-xl border px-3 text-sm font-semibold hover:bg-black/5 flex items-center gap-3"
                 >
