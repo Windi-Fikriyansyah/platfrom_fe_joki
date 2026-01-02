@@ -32,7 +32,7 @@ export const metadata: Metadata = {
   title: "Chat - Jokiin",
   description: "Chat with freelancers and clients on Jokiin",
   robots: {
-    index: false, // Don't index chat pages for privacy
+    index: false,
     follow: false,
   },
 };
@@ -40,7 +40,7 @@ export const metadata: Metadata = {
 export default async function ChatPage(props: { searchParams: Promise<SP> }) {
   const searchParams = await props.searchParams;
 
-  // Cek login terlebih dahulu
+  // 1. Cek login
   let userData: Record<string, unknown>;
   try {
     const meRes = await apiServerFetch<MeResponse>("/me");
@@ -53,56 +53,60 @@ export default async function ChatPage(props: { searchParams: Promise<SP> }) {
     redirect("/login?redirect=/chat");
   }
 
-  const productId =
+  // 2. Ambil & rapikan query params
+  const rawProductId =
     typeof searchParams.product_id === "string"
-      ? searchParams.product_id
-      : undefined;
+      ? searchParams.product_id.trim()
+      : "";
+
+  const productId = rawProductId || undefined;
+
   const sellerId =
     typeof searchParams.seller_id === "string"
       ? searchParams.seller_id
       : undefined;
+
   const pkg =
     typeof searchParams.package === "string" ? searchParams.package : undefined;
+
   const cid =
     typeof searchParams.cid === "string" ? searchParams.cid : undefined;
 
-  // Validasi parameter
+  // 3. Validasi produk HANYA kalau productId kelihatan "encrypted" (panjang & karakter aman)
+  const looksLikeEncryptedProductId =
+    !!productId &&
+    productId.length >= 16 && // threshold bisa kamu sesuaikan dengan format ciphertext-mu
+    /^[A-Za-z0-9_-]+$/.test(productId); // base64url-ish
 
-  if (sellerId && productId) {
-    const pid = Number(productId);
-    if (Number.isFinite(pid)) {
-      try {
-        const productRes = await apiServerFetch<{
-          success: boolean;
-          data: Product;
-        }>(
-          `/products/${pid}` // ✅ pastikan angka
-        );
-        if (productRes.success && productRes.data.user_id !== sellerId) {
-          console.warn("Seller ID mismatch with product owner");
-        }
-      } catch (error) {
-        console.error("Failed to validate product:", error);
+  if (sellerId && looksLikeEncryptedProductId) {
+    try {
+      const normalized = normalizeProductId(String(productId));
+      const productRes = await apiServerFetch<{
+        success: boolean;
+        data: Product;
+      }>(`/products/${normalized.urlId}`);
+
+      if (productRes.success && productRes.data.user_id !== sellerId) {
+        console.warn("Seller ID mismatch dengan pemilik produk");
       }
-    } else {
-      // ✅ jangan validasi kalau product_id bukan angka
-      console.warn(
-        "Skip validate product: product_id is not numeric:",
-        productId
-      );
+    } catch {
+      // ❗ Jangan log error panjang dari backend lagi, cukup diamkan
+      // supaya tidak spam "ciphertext too short" di console
     }
   }
 
-  // Handle pembuatan conversation baru
-  // Hanya buat conversation jika ada seller_id (buyer dan seller diperlukan)
+  // 4. Buat conversation baru kalau belum ada cid tapi ada sellerId
   if (!cid && sellerId) {
     try {
       const body: { seller_id: string; product_id?: number } = {
         seller_id: sellerId,
       };
+
       if (productId) {
         const pid = Number(productId);
-        if (Number.isFinite(pid)) body.product_id = pid; // ✅ kirim number
+        if (Number.isFinite(pid)) {
+          body.product_id = pid; // kalau memang numeric, kirim ke backend
+        }
       }
 
       const convRes = await apiServerFetch<{
@@ -120,7 +124,6 @@ export default async function ChatPage(props: { searchParams: Promise<SP> }) {
 
       const conversationId = convRes.data.id;
 
-      // Build URL dengan parameter yang valid
       const params = new URLSearchParams();
       params.set("cid", conversationId);
       if (productId) params.set("product_id", productId);
@@ -129,15 +132,16 @@ export default async function ChatPage(props: { searchParams: Promise<SP> }) {
 
       redirect(`/chat?${params.toString()}`);
     } catch (error) {
+      if (isNextRedirectError(error)) {
+        throw error;
+      }
       console.error("Error creating conversation:", error);
-      // Tetap lanjut tanpa redirect jika gagal membuat conversation
     }
   }
 
-  // Gunakan cid sebagai activeId untuk fetch messages
   const activeId = cid;
 
-  // Fetch data secara parallel untuk performa lebih baik dengan timeout
+  // 5. Helper fetch dengan timeout
   const fetchWithTimeout = async <T,>(
     promise: Promise<T>,
     timeoutMs: number = 5000
@@ -167,22 +171,27 @@ export default async function ChatPage(props: { searchParams: Promise<SP> }) {
             ),
             5000
           )
-        : Promise.resolve({ success: true, data: [] }),
+        : Promise.resolve({ success: true, data: [] } as any),
     ]);
 
     const conversations =
-      convsRes.status === "fulfilled" && convsRes.value?.success
-        ? convsRes.value.data || []
-        : [];
-    const messages =
-      messagesRes.status === "fulfilled" && messagesRes.value?.success
-        ? messagesRes.value.data || []
+      convsRes.status === "fulfilled" &&
+      (convsRes.value as any)?.success &&
+      (convsRes.value as any)?.data
+        ? (convsRes.value as any).data
         : [];
 
-    // Cek apakah activeId valid
+    const messages =
+      messagesRes.status === "fulfilled" &&
+      (messagesRes.value as any)?.success &&
+      (messagesRes.value as any)?.data
+        ? (messagesRes.value as any).data
+        : [];
+
     const activeConv = activeId
       ? conversations.find((c: Conversation) => c.id === activeId)
       : undefined;
+
     const validActiveId: string | null =
       activeConv && activeId ? activeId : conversations[0]?.id ?? null;
 
