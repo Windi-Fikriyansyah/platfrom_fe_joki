@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { apiFetch } from "@/lib/api";
-import type { Conversation, Me, Message, WSIncoming } from "./types";
+import type { Conversation, Me, Message, WSIncoming, JobOffer } from "./types";
 
 const WS_BASE =
   process.env.NEXT_PUBLIC_WS_URL ||
@@ -51,6 +51,7 @@ export function useChat(initial?: {
   const [messages, setMessages] = useState<Message[]>(
     dedupById(initial?.initialMessages ?? [])
   );
+  const [offers, setOffers] = useState<JobOffer[]>([]);
   const [message, setMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [wsConnected, setWsConnected] = useState(false);
@@ -146,14 +147,33 @@ export function useChat(initial?: {
     }, 350);
   }, []);
 
+  const loadOffers = useCallback(async (cid: string) => {
+    if (!cid) return;
+    try {
+      const json = await apiFetch<{ success: boolean; data: JobOffer[] }>(
+        `/chat/conversations/${cid}/offers`
+      );
+      if (json.success) {
+        setOffers(json.data);
+      }
+    } catch (error) {
+      console.error("Failed to load offers:", error);
+    }
+  }, []);
+
   const loadMessages = useCallback(
     async (cid: string) => {
       if (!cid) return;
       try {
         setIsLoading(true);
-        const json = await apiFetch<{ success: boolean; data: Message[] }>(
+        // Load messages
+        const msgPromise = apiFetch<{ success: boolean; data: Message[] }>(
           `/chat/conversations/${cid}/messages?limit=50`
         );
+        // Load offers in parallel
+        const offersPromise = loadOffers(cid);
+
+        const [json] = await Promise.all([msgPromise, offersPromise]);
 
         const deduped = dedupById(json.data || []);
         setMessages(deduped);
@@ -166,22 +186,40 @@ export function useChat(initial?: {
         setIsLoading(false);
       }
     },
-    [scheduleMarkRead]
+    [scheduleMarkRead, loadOffers]
   );
 
+  const createOffer = useCallback(async (data: any) => {
+    if (!activeIdRef.current) throw new Error("No active conversation");
+
+    const res = await apiFetch<{ success: boolean; data: JobOffer }>(
+      `/chat/conversations/${activeIdRef.current}/offers`,
+      {
+        method: "POST",
+        body: JSON.stringify(data),
+      }
+    );
+
+    if (res.success && res.data) {
+      setOffers(prev => [res.data, ...prev]);
+      return res.data;
+    }
+    throw new Error("Failed to create offer");
+  }, []);
+
   // Send message
-  const sendMessage = useCallback(async () => {
+  const sendMessage = useCallback(async (content?: string) => {
     // Use activeIdRef instead of activeId for consistency
     if (!activeIdRef.current) {
       console.error("No active conversation selected");
       return;
     }
 
-    const text = message.trim();
+    const text = (content || message).trim();
     if (!text) return;
 
     const currentActiveId = activeIdRef.current;
-    setMessage("");
+    if (!content) setMessage("");
 
     // Optimistic update
     const temp: Message = {
@@ -243,7 +281,7 @@ export function useChat(initial?: {
       // Rollback optimistic update
       console.error("[SendMessage] Error sending message:", e);
       setMessages((prev) => prev.filter((m) => m.id !== temp.id));
-      setMessage(text);
+      if (!content) setMessage(text);
     }
   }, [message, me?.id, scheduleMarkRead]);
 
@@ -297,7 +335,16 @@ export function useChat(initial?: {
         // Support both legacy "message" and backend "new_message" payloads
         let msg: Message | undefined;
         if (payload.type === "message") msg = payload.data;
-        else if (payload.type === "new_message") msg = payload.message;
+        else if (payload.type === "new_message") {
+          msg = payload.message;
+          // If payload has offer, update offers state
+          if (payload.offer) {
+            setOffers(prev => [payload.offer!, ...prev]);
+          }
+        } else if (payload.type === "offer_status_update") {
+          // Update specific offer in state
+          setOffers(prev => prev.map(o => o.id === payload.offer.id ? payload.offer : o));
+        }
 
         if (msg) {
           console.log(
@@ -322,9 +369,9 @@ export function useChat(initial?: {
                 return { ...c, unread_count: 0 };
               }
 
-              // For inactive conversations, don't modify unread_count locally
-              // It will be updated by loadConversations below
-              return c;
+              // For inactive conversations, increment unread_count locally to ensure responsiveness
+              // loadConversations will eventually sync the exact count from backend
+              return { ...c, unread_count: (c.unread_count || 0) + 1 };
             });
           });
 
@@ -444,6 +491,20 @@ export function useChat(initial?: {
     setActiveId(cid);
   }, []);
 
+  const updateOffer = useCallback(async (offerId: string, data: any) => {
+    try {
+      if (!me) return;
+      await apiFetch(`/job-offers/${offerId}`, {
+        method: "PUT",
+        body: JSON.stringify(data),
+      });
+      // Offer updates are handled via WebSocket offer_status_update event
+    } catch (error) {
+      console.error("Failed to update offer:", error);
+      throw error;
+    }
+  }, [me]);
+
   return {
     me,
     otherUser,
@@ -451,10 +512,13 @@ export function useChat(initial?: {
     activeId,
     activeConv,
     messages,
+    offers,
     message,
     setMessage,
     setActiveId: openConversation,
     sendMessage,
+    createOffer,
+    updateOffer,
     reloadConversations: loadConversations,
     isLoading,
     wsConnected,

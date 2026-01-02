@@ -23,12 +23,59 @@ export type Me = {
   freelancer_profile?: FreelancerProfile | null;
 };
 
+export type JobOfferStatus =
+  | "pending"
+  | "paid"
+  | "working"
+  | "delivered"
+  | "completed"
+  | "cancelled";
+
+export type ProductMini = {
+  id: number;
+  title: string;
+  cover_url?: string;
+};
+
+export type JobOffer = {
+  id: string;
+  order_code: string;
+  conversation_id: string;
+  freelancer_id: string;
+  client_id: string;
+  product_id?: number;
+
+  price: number;
+  platform_fee: number;
+  net_amount: number;
+
+  title: string;
+  description: string;
+  revision_count: number;
+
+  start_date: string;
+  delivery_date: string;
+  delivery_format: string;
+  notes: string;
+
+  status: JobOfferStatus;
+  created_at: string;
+
+  product?: ProductMini;
+  freelancer?: User;
+  client?: User;
+};
+
 export type Message = {
   id: string;
   conversation_id: string;
   sender_id: string;
   text: string;
   created_at: string;
+
+  // For offer messages (text starts with [OFFER])
+  offer_id?: string;
+  offer?: JobOffer;
 };
 
 export type Conversation = {
@@ -44,10 +91,22 @@ export type Conversation = {
   last_message?: Message | null;
   unread_count?: number;
   updated_at?: string;
+  latest_offer_status?: string;
 };
 
 export type WSIncoming =
   | { type: "message"; data: Message }
-  | { type: "new_message"; message: Message }
+  | { type: "new_message"; message: Message; offer?: JobOffer }
+  | { type: "offer_status_update"; offer: JobOffer }
   | { type: "ping"; data?: any }
   | { type: "system"; data: any };
+
+export type ProductListItem = {
+  id: string; // encrypted ID
+  real_id: number;
+  title: string;
+  category: string;
+  base_price: number;
+  status: string;
+  created_at: string;
+};

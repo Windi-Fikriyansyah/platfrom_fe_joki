@@ -7,6 +7,7 @@ interface ConversationItemProps {
   isActive: boolean;
   userId?: string;
   onClick: (id: string) => void;
+  statusBadge?: { label: string; color: string } | null;
 }
 
 const ConversationItem = memo(function ConversationItem({
@@ -14,6 +15,7 @@ const ConversationItem = memo(function ConversationItem({
   isActive,
   userId,
   onClick,
+  statusBadge,
 }: ConversationItemProps) {
   const isBuyer = userId ? userId === conv.buyer_id : false;
   const other = isBuyer ? conv.seller : conv.buyer;
@@ -26,9 +28,8 @@ const ConversationItem = memo(function ConversationItem({
   return (
     <div
       onClick={() => onClick(conv.id)}
-      className={`p-3 border-b border-gray-100 cursor-pointer hover:bg-gray-50 transition ${
-        isActive ? "bg-gray-50" : ""
-      }`}
+      className={`p-3 border-b border-gray-100 cursor-pointer hover:bg-gray-50 transition ${isActive ? "bg-gray-50" : ""
+        }`}
     >
       <div className="flex items-center gap-3">
         {/* Avatar */}
@@ -45,13 +46,20 @@ const ConversationItem = memo(function ConversationItem({
             <span className="text-xs text-gray-500 flex-shrink-0">
               {conv.updated_at
                 ? new Date(conv.updated_at).toLocaleTimeString("id-ID", {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })
                 : ""}
             </span>
           </div>
-          <p className="text-sm text-gray-500 truncate">{lastMsg}</p>
+          <div className="flex items-center gap-2 mt-1">
+            <p className="text-sm text-gray-500 truncate flex-1">{lastMsg}</p>
+            {statusBadge && (
+              <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${statusBadge.color}`}>
+                {statusBadge.label}
+              </span>
+            )}
+          </div>
         </div>
 
         {/* Unread Badge */}
