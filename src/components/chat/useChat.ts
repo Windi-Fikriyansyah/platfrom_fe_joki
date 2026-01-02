@@ -260,7 +260,7 @@ export function useChat(initial?: {
     if (wsRef.current) {
       try {
         wsRef.current.close();
-      } catch {}
+      } catch { }
       wsRef.current = null;
     }
   }, []);
@@ -286,6 +286,8 @@ export function useChat(initial?: {
     ws.onopen = () => {
       setWsConnected(true);
       backoffRef.current = 800; // Reset backoff on successful connection
+      // Reload conversations to sync unread counts with backend
+      loadConversations();
     };
 
     ws.onmessage = (ev) => {
@@ -302,37 +304,41 @@ export function useChat(initial?: {
             `[WebSocket] Received message for conversation: ${msg.conversation_id}, activeIdRef: ${activeIdRef.current}`
           );
 
-          // Update conversations list and unread counts
+          const mine = me?.id && msg.sender_id === me.id;
+          const isActive = activeIdRef.current === msg.conversation_id;
+
+          // Update conversations list - only update last_message locally
           setConversations((prev) => {
             const updated = updateLastMessage(prev, msg as Message);
 
             return updated.map((c) => {
               if (c.id !== msg!.conversation_id) return c;
 
-              const mine = me?.id && msg!.sender_id === me.id;
-              const isActive = activeIdRef.current === msg!.conversation_id;
-
-              // Own message or viewing the conversation: unread = 0
+              // Own message or viewing the conversation: mark as read
               if (mine || isActive) {
                 console.log(
                   `[WebSocket] Clearing unread for ${c.id} (mine=${mine}, isActive=${isActive})`
                 );
-                if (isActive) {
-                  scheduleMarkRead(msg!.conversation_id, msg!.id);
-                }
                 return { ...c, unread_count: 0 };
               }
 
-              // Incoming message in inactive conversation: increment unread
-              const newUnread = (c.unread_count || 0) + 1;
-              console.log(
-                `[WebSocket] Incrementing unread for ${c.id} from ${
-                  c.unread_count || 0
-                } to ${newUnread}`
-              );
-              return { ...c, unread_count: newUnread };
+              // For inactive conversations, don't modify unread_count locally
+              // It will be updated by loadConversations below
+              return c;
             });
           });
+
+          // If we're viewing this conversation, mark as read
+          if (isActive) {
+            scheduleMarkRead(msg.conversation_id, msg.id);
+          }
+
+          // If this is an incoming message on an inactive conversation,
+          // reload conversations to get the correct unread count from backend
+          if (!mine && !isActive) {
+            console.log(`[WebSocket] Incoming message on inactive conversation, reloading to sync unread count`);
+            loadConversations();
+          }
 
           // If message belongs to active conversation, append to messages
           if (msg.conversation_id === activeIdRef.current) {
@@ -358,7 +364,7 @@ export function useChat(initial?: {
           // Send pong response
           try {
             ws.send(JSON.stringify({ type: "pong" }));
-          } catch {}
+          } catch { }
         }
       } catch (e) {
         console.error("WS parse error:", e);
@@ -383,7 +389,7 @@ export function useChat(initial?: {
         connectWS();
       }, wait);
     };
-  }, [me?.id, scheduleMarkRead, closeWS]);
+  }, [me?.id, scheduleMarkRead, closeWS, loadConversations]);
 
   // Lifecycle
   useEffect(() => {
