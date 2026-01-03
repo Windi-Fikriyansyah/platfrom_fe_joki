@@ -1,6 +1,7 @@
 import { memo } from "react";
 import { User } from "./types";
 import { getDisplayName, getAvatarInitial } from "./utils";
+import { MoreVertical, Phone, Search } from "lucide-react";
 
 interface ChatHeaderProps {
   otherUser: User | null;
@@ -13,50 +14,48 @@ const ChatHeader = memo(function ChatHeader({
 }: ChatHeaderProps) {
   const displayName = getDisplayName(otherUser);
   const avatar = getAvatarInitial(otherUser);
+  const photoUrl = otherUser?.freelancer_profile?.photo_url;
 
   return (
-    <div className="bg-white border-b border-gray-200 p-4 flex items-center justify-between">
-      <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white font-semibold">
-          {avatar}
+    <div className="bg-white border-b border-gray-200 px-6 py-3 flex items-center justify-between shadow-sm z-10 sticky top-0">
+      <div className="flex items-center gap-4">
+        {/* Profile Info */}
+        <div className="relative group">
+          {photoUrl ? (
+            <img
+              src={photoUrl}
+              alt={displayName}
+              className="w-11 h-11 rounded-full object-cover border-2 border-white shadow-sm ring-1 ring-gray-100 transition-transform group-hover:scale-105"
+            />
+          ) : (
+            <div className="w-11 h-11 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-bold text-sm border-2 border-white shadow-sm ring-1 ring-gray-100 group-hover:scale-105 transition-transform">
+              {avatar}
+            </div>
+          )}
+          {/* Presence Indicator */}
+          <div className={`absolute bottom-0 right-0 w-3.5 h-3.5 rounded-full border-2 border-white ${wsConnected ? 'bg-green-500' : 'bg-gray-300'} shadow-sm`}></div>
         </div>
+
         <div>
-          <h2 className="font-semibold text-gray-800">{displayName}</h2>
-          <p className="text-xs text-gray-500">
-            {wsConnected ? "Online" : "Offline"}
-          </p>
+          <h2 className="font-bold text-gray-900 leading-tight">{displayName}</h2>
+          <div className="flex items-center gap-1.5 mt-0.5">
+            <span className={`w-2 h-2 rounded-full ${wsConnected ? 'bg-green-500 animate-pulse' : 'bg-gray-400'}`}></span>
+            <p className="text-[11px] font-medium text-gray-500 uppercase tracking-wider">
+              {wsConnected ? "Online" : "Offline"}
+            </p>
+          </div>
         </div>
       </div>
-      <div className="flex gap-2">
-        <button className="p-2 hover:bg-gray-100 rounded-full transition">
-          <svg
-            className="w-6 h-6 text-gray-600"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M3 5a2 2 0 012-2h3.28a1 1 0 00.948.684l1.498 7.391a1 1 0 00.502.756l2.73 1.365a11.902 11.902 0 01-5.85 5.85l-1.365-2.73a1 1 0 00-.756-.502L3.684 11.28A1 1 0 003 10.28V5z"
-            />
-          </svg>
+
+      <div className="flex items-center gap-1">
+        <button className="p-2.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-all active:scale-95" title="Search Message">
+          <Search className="w-5 h-5" />
         </button>
-        <button className="p-2 hover:bg-gray-100 rounded-full transition">
-          <svg
-            className="w-6 h-6 text-gray-600"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M4 6h16M4 12h16M4 18h16"
-            />
-          </svg>
+        <button className="p-2.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-all active:scale-95" title="Audio Call">
+          <Phone className="w-5 h-5" />
+        </button>
+        <button className="p-2.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-all active:scale-95">
+          <MoreVertical className="w-5 h-5" />
         </button>
       </div>
     </div>

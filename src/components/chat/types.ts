@@ -59,6 +59,9 @@ export type JobOffer = {
   notes: string;
 
   status: JobOfferStatus;
+  work_delivery_link?: string;
+  work_delivery_files?: string;
+  used_revision_count: number;
   created_at: string;
 
   product?: ProductMini;
@@ -70,6 +73,7 @@ export type Message = {
   id: string;
   conversation_id: string;
   sender_id: string;
+  type?: "text" | "offer" | "system" | "delivery" | "revision";
   text: string;
   created_at: string;
 

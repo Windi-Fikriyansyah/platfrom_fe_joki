@@ -30,3 +30,16 @@ export function getAvatarInitial(user?: User | null): string {
   const displayName = getDisplayName(user);
   return displayName.charAt(0).toUpperCase();
 }
+
+/**
+ * Format time to HH.mm 24h format
+ */
+export function formatChatTime(dateString: string): string {
+  if (!dateString) return "";
+  const date = new Date(dateString);
+  return date.toLocaleTimeString("id-ID", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).replace(":", ".");
+}

@@ -1,9 +1,10 @@
 "use client";
 
+import { toast } from "sonner";
 import { useChat } from "./useChat";
 import { useRef, useEffect, useState, memo, useMemo } from "react";
 import { Conversation, Message } from "./types";
-import { getDisplayName, getAvatarInitial } from "./utils";
+import { getDisplayName, getAvatarInitial, formatChatTime } from "./utils";
 import ConversationItem from "./ConversationItem";
 import MessageBubble from "./MessageBubble";
 import ChatHeader from "./ChatHeader";
@@ -13,6 +14,16 @@ import OfferMessage from "./OfferMessage";
 import OrderStatusSidebar from "./OrderStatusSidebar";
 import { FileText } from "lucide-react";
 import { JobOffer } from "./types";
+import { apiFetch } from "@/lib/api";
+import PaymentMethodModal from "./PaymentMethodModal";
+import DeliveryModal from "./DeliveryModal";
+import DeliveryMessage from "./DeliveryMessage";
+import ViewFinalResultModal from "./ViewFinalResultModal";
+import RevisionModal from "./RevisionModal";
+import RevisionMessage from "./RevisionMessage";
+import ViewRevisionModal from "./ViewRevisionModal";
+import ConfirmCompletionModal from "./ConfirmCompletionModal";
+import { CheckCircle, RotateCw } from "lucide-react";
 
 
 
@@ -57,7 +68,38 @@ const ChatUI = memo(function ChatUI({
   const [sending, setSending] = useState(false);
 
   const [showOfferModal, setShowOfferModal] = useState(false);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [selectedOfferForPayment, setSelectedOfferForPayment] = useState<JobOffer | null>(null);
+  const [showDeliveryModal, setShowDeliveryModal] = useState(false);
+  const [showViewResultModal, setShowViewResultModal] = useState(false);
+  const [selectedOfferForResult, setSelectedOfferForResult] = useState<JobOffer | null>(null);
   const [editOffer, setEditOffer] = useState<JobOffer | null>(null);
+  const [showRevisionModal, setShowRevisionModal] = useState(false);
+  const [selectedOfferForRevision, setSelectedOfferForRevision] = useState<JobOffer | null>(null);
+  const [showViewRevisionModal, setShowViewRevisionModal] = useState(false);
+  const [selectedRevisionText, setSelectedRevisionText] = useState("");
+  const [showConfirmCompletionModal, setShowConfirmCompletionModal] = useState(false);
+  const [selectedOfferForCompletion, setSelectedOfferForCompletion] = useState<JobOffer | null>(null);
+  const [confirmLoading, setConfirmLoading] = useState(false);
+
+  // Track previous offer statuses to trigger toasts
+  const prevOffersStatusRef = useRef<Record<string, string>>({});
+
+  useEffect(() => {
+    if (offers.length === 0) return;
+
+    offers.forEach(offer => {
+      const prevStatus = prevOffersStatusRef.current[offer.id];
+      // Only trigger if we have a previous status (not first load) and it changed to PAID
+      if (prevStatus && prevStatus !== 'paid' && offer.status === 'paid') {
+        toast.success("Pembayaran Berhasil! Pesanan sedang diproses.", {
+          duration: 5000,
+          position: 'top-center'
+        });
+      }
+      prevOffersStatusRef.current[offer.id] = offer.status;
+    });
+  }, [offers]);
   const [viewOffer, setViewOffer] = useState<any>(null); // Using any temporarily for JobOffer type compatibility if needed
 
   // Auto-send package message
@@ -138,7 +180,7 @@ const ChatUI = memo(function ChatUI({
   }
 
   return (
-    <div className="flex h-screen bg-white">
+    <div className="flex h-full bg-white">
       {/* Sidebar - Conversation List */}
       <div className="w-96 border-r border-gray-200 flex flex-col bg-white">
         {/* Sidebar Header */}
@@ -197,8 +239,8 @@ const ChatUI = memo(function ChatUI({
                   if (!status) return null;
                   const map: Record<string, { label: string, color: string }> = {
                     pending: { label: "Menunggu Pembayaran", color: "bg-orange-100 text-orange-700" },
-                    paid: { label: "Dibayar", color: "bg-green-100 text-green-700" },
-                    working: { label: "Dalam Pengerjaan", color: "bg-blue-100 text-blue-700" },
+                    paid: { label: "Bekerja", color: "bg-green-100 text-green-700" },
+                    working: { label: "Bekerja", color: "bg-blue-100 text-blue-700" },
                     delivered: { label: "Dikirim", color: "bg-purple-100 text-purple-700" },
                     completed: { label: "Selesai", color: "bg-gray-100 text-gray-700" },
                     cancelled: { label: "Dibatalkan", color: "bg-red-100 text-red-700" }
@@ -216,54 +258,11 @@ const ChatUI = memo(function ChatUI({
         {activeId && activeConv ? (
           <>
             <div className="flex-1 flex flex-col min-w-0">
-              {/* Chat Header */}
-              <div className="bg-white border-b border-gray-200 p-4 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white font-semibold">
-                    {getAvatarInitial(otherUser)}
-                  </div>
-                  <div>
-                    <h2 className="font-semibold text-gray-800">
-                      {getDisplayName(otherUser)}
-                    </h2>
-                    <p className="text-xs text-gray-500">
-                      {wsConnected ? "Online" : "Offline"}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex gap-2">
-                  <button className="p-2 hover:bg-gray-100 rounded-full transition">
-                    <svg
-                      className="w-6 h-6 text-gray-600"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M3 5a2 2 0 012-2h3.28a1 1 0 00.948.684l1.498 7.391a1 1 0 00.502.756l2.73 1.365a11.902 11.902 0 01-5.85 5.85l-1.365-2.73a1 1 0 00-.756-.502L3.684 11.28A1 1 0 003 10.28V5z"
-                      />
-                    </svg>
-                  </button>
-                  <button className="p-2 hover:bg-gray-100 rounded-full transition">
-                    <svg
-                      className="w-6 h-6 text-gray-600"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M4 6h16M4 12h16M4 18h16"
-                      />
-                    </svg>
-                  </button>
-                </div>
-              </div>
+              {/* Header */}
+              <ChatHeader
+                otherUser={otherUser ?? null}
+                wsConnected={wsConnected}
+              />
 
               {/* Messages Area */}
               <div className="flex-1 overflow-y-auto p-4 space-y-4 flex flex-col">
@@ -273,6 +272,67 @@ const ChatUI = memo(function ChatUI({
                   </div>
                 ) : (
                   messages.map((msg) => {
+                    // System Message
+                    const isSystemMessage = msg.type === 'system' || msg.text.includes("Pemberi Kerja telah melakukan pembayaran ke Platform");
+                    if (isSystemMessage) {
+                      return (
+                        <div key={msg.id} className="flex flex-col items-center my-6 animate-in fade-in zoom-in-95 duration-300">
+                          <span className="text-xs text-gray-400 mb-2">
+                            {formatChatTime(msg.created_at)}
+                          </span>
+                          <div className="bg-[#E8F5E9] text-gray-700 text-sm px-5 py-3 rounded-lg border border-[#C8E6C9] flex items-start gap-3 max-w-lg shadow-sm">
+                            <div className="w-5 h-5 rounded-full bg-green-500 flex-shrink-0 flex items-center justify-center mt-0.5">
+                              <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                              </svg>
+                            </div>
+                            <p className="leading-relaxed">{msg.text}</p>
+                          </div>
+                        </div>
+                      );
+                    }
+
+                    // Delivery Message
+                    if (msg.type === 'delivery') {
+                      const deliveryOffer = offers.find(o => o.status === 'delivered' || o.status === 'completed');
+                      return (
+                        <DeliveryMessage
+                          key={msg.id}
+                          isOwn={msg.sender_id === me?.id}
+                          timestamp={formatChatTime(msg.created_at)}
+                          onViewResult={() => {
+                            if (deliveryOffer) {
+                              setSelectedOfferForResult(deliveryOffer);
+                              setShowViewResultModal(true);
+                            } else {
+                              // If not in active offers, we might need to fetch it or finding from conversations
+                              const latestOffer = [...offers].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0];
+                              if (latestOffer) {
+                                setSelectedOfferForResult(latestOffer);
+                                setShowViewResultModal(true);
+                              }
+                            }
+                          }}
+                        />
+                      );
+                    }
+
+                    // Revision Message
+                    if (msg.type === 'revision') {
+                      return (
+                        <RevisionMessage
+                          key={msg.id}
+                          reason={msg.text}
+                          isOwn={msg.sender_id === me?.id}
+                          timestamp={formatChatTime(msg.created_at)}
+                          onViewRevision={() => {
+                            setSelectedRevisionText(msg.text);
+                            setShowViewRevisionModal(true);
+                          }}
+                        />
+                      );
+                    }
+
                     const offer = msg.offer || (msg.text.startsWith("[OFFER]") ? offers.find(o => msg.text.includes(o.id)) : null);
 
                     if (offer) {
@@ -304,13 +364,118 @@ const ChatUI = memo(function ChatUI({
                 {/* Freelancer Offer Button */}
                 {me?.role === "freelancer" && (
                   <div className="absolute -top-12 left-0 right-0 px-4 flex justify-center pointer-events-none">
-                    <button
-                      onClick={() => setShowOfferModal(true)}
-                      className="pointer-events-auto bg-amber-400 hover:bg-amber-500 text-gray-900 font-medium px-4 py-2 rounded-full shadow-lg flex items-center gap-2 text-sm transition-colors mb-2"
-                    >
-                      <FileText className="w-4 h-4" />
-                      Buat Penawaran
-                    </button>
+                    {(() => {
+                      const sortedOffers = [...offers].sort((a, b) =>
+                        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+                      );
+                      const latestOffer = sortedOffers[0];
+
+                      if (latestOffer && latestOffer.status === "pending") {
+                        return (
+                          <button
+                            onClick={() => setEditOffer(latestOffer)}
+                            className="pointer-events-auto bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-2 rounded-full shadow-lg flex items-center gap-2 text-sm transition-colors mb-2"
+                          >
+                            <FileText className="w-4 h-4" />
+                            Ubah Penawaran
+                          </button>
+                        );
+                      }
+
+                      if (latestOffer && (latestOffer.status === "paid" || latestOffer.status === "working")) {
+                        return (
+                          <button
+                            onClick={() => setShowDeliveryModal(true)}
+                            className="pointer-events-auto bg-green-600 hover:bg-green-700 text-white font-medium px-4 py-2 rounded-full shadow-lg flex items-center gap-2 text-sm transition-colors mb-2"
+                          >
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a1 1 0 001 1h14a1 1 0 001-1v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                            </svg>
+                            Upload Pekerjaan
+                          </button>
+                        );
+                      }
+
+                      return (
+                        <button
+                          onClick={() => setShowOfferModal(true)}
+                          className="pointer-events-auto bg-amber-400 hover:bg-amber-500 text-gray-900 font-medium px-4 py-2 rounded-full shadow-lg flex items-center gap-2 text-sm transition-colors mb-2"
+                        >
+                          <FileText className="w-4 h-4" />
+                          Buat Penawaran
+                        </button>
+                      );
+                    })()}
+                  </div>
+                )}
+
+                {/* Client Pay Button */}
+                {me?.role === "client" && (
+                  <div className="absolute -top-12 left-0 right-0 px-4 flex justify-center pointer-events-none">
+                    {(() => {
+                      // Debugging logs
+                      console.log("Checking for pay button. Role:", me?.role);
+                      console.log("Offers from hook:", offers?.length);
+
+                      if (!offers || offers.length === 0) return null;
+
+                      // Sort by created_at desc to get latest
+                      const sortedOffers = [...offers].sort((a, b) =>
+                        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+                      );
+                      const latestOffer = sortedOffers[0];
+
+                      console.log("Latest offer status:", latestOffer?.status);
+
+                      if (latestOffer && latestOffer.status === "pending") {
+                        return (
+                          <button
+                            onClick={() => {
+                              setSelectedOfferForPayment(latestOffer);
+                              setShowPaymentModal(true);
+                            }}
+                            className="pointer-events-auto bg-green-600 hover:bg-green-700 text-white font-medium px-6 py-2 rounded-full shadow-lg flex items-center gap-2 text-sm transition-colors mb-2 animate-bounce"
+                          >
+                            <span className="font-bold">Bayar Tagihan</span>
+                            <span className="bg-white/20 px-2 py-0.5 rounded text-xs">
+                              Rp {latestOffer.price.toLocaleString()}
+                            </span>
+                          </button>
+                        );
+                      }
+                      if (latestOffer && latestOffer.status === "delivered") {
+                        return (
+                          <div className="flex gap-2 mb-2 pointer-events-auto">
+                            <button
+                              onClick={() => {
+                                setSelectedOfferForCompletion(latestOffer);
+                                setShowConfirmCompletionModal(true);
+                              }}
+                              className="bg-green-600 hover:bg-green-700 text-white font-bold px-5 py-2 rounded-full shadow-lg flex items-center gap-2 text-sm transition-all active:scale-95"
+                            >
+                              <CheckCircle size={16} />
+                              Konfirmasi Selesai
+                            </button>
+                            <button
+                              onClick={() => {
+                                setSelectedOfferForRevision(latestOffer);
+                                setShowRevisionModal(true);
+                              }}
+                              disabled={latestOffer.used_revision_count >= latestOffer.revision_count}
+                              className={`bg-white border text-blue-600 font-bold px-5 py-2 rounded-full shadow-lg flex items-center gap-2 text-sm transition-all ${latestOffer.used_revision_count >= latestOffer.revision_count
+                                ? 'opacity-50 cursor-not-allowed border-gray-300 text-gray-400'
+                                : 'border-blue-500 hover:bg-blue-50 active:scale-95'
+                                }`}
+                            >
+                              <RotateCw size={16} className="w-4 h-4" />
+                              Revisi ({latestOffer.used_revision_count}/{latestOffer.revision_count})
+                            </button>
+                          </div>
+                        );
+                      }
+
+                      return null;
+                    })()}
                   </div>
                 )}
 
@@ -362,6 +527,13 @@ const ChatUI = memo(function ChatUI({
                 isLoading={false}
                 isFreelancer={me?.role === 'freelancer'}
                 onEdit={(offer) => setEditOffer(offer)}
+                onViewResult={() => {
+                  const deliveryOffer = offers.find(o => o.status === 'delivered' || o.status === 'completed');
+                  if (deliveryOffer) {
+                    setSelectedOfferForResult(deliveryOffer);
+                    setShowViewResultModal(true);
+                  }
+                }}
               />
             )}
 
@@ -372,6 +544,96 @@ const ChatUI = memo(function ChatUI({
               offer={viewOffer}
               isFreelancer={me?.role === 'freelancer'}
             />
+
+            {/* Payment Modal */}
+            <PaymentMethodModal
+              isOpen={showPaymentModal}
+              onClose={() => setShowPaymentModal(false)}
+              amount={selectedOfferForPayment?.price || 0}
+              onSelect={(method) => {
+                if (!selectedOfferForPayment) return;
+
+                apiFetch<{ data: { checkout_url: string } }>("/payments/create", {
+                  method: "POST",
+                  body: JSON.stringify({
+                    offer_id: selectedOfferForPayment.id,
+                    payment_method: method
+                  }),
+                })
+                  .then(res => {
+                    if (res.data?.checkout_url) {
+                      // Redirect to payment URL
+                      window.location.href = res.data.checkout_url;
+                    }
+                  })
+                  .catch(err => {
+                    console.error("Payment error", err);
+                    alert("Gagal membuat pembayaran: " + (err.message || "Unknown error"));
+                  });
+              }}
+            />
+
+            {/* Delivery Modal */}
+            {offers.length > 0 && (
+              <DeliveryModal
+                isOpen={showDeliveryModal}
+                onClose={() => setShowDeliveryModal(false)}
+                offer={[...offers].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0]}
+                onSuccess={(updatedOffer) => {
+                  // The useChat hook handles WebSocket updates, but we can also manually update local state if needed
+                  // For now, WebSocket update is sufficient
+                }}
+              />
+            )}
+
+            {/* View Result Modal */}
+            <ViewFinalResultModal
+              isOpen={showViewResultModal}
+              onClose={() => setShowViewResultModal(false)}
+              offer={selectedOfferForResult}
+            />
+
+            {/* Revision Modal */}
+            {selectedOfferForRevision && (
+              <RevisionModal
+                isOpen={showRevisionModal}
+                onClose={() => setShowRevisionModal(false)}
+                offer={selectedOfferForRevision}
+                onSuccess={(updatedOffer) => {
+                  // status updates automatically via WebSocket
+                }}
+              />
+            )}
+
+            {/* View Revision Modal */}
+            <ViewRevisionModal
+              isOpen={showViewRevisionModal}
+              onClose={() => setShowViewRevisionModal(false)}
+              reason={selectedRevisionText}
+              orderCode={offers.find(o => o.status === 'working' || o.status === 'delivered' || o.status === 'completed')?.order_code}
+            />
+
+            {/* Confirm Completion Modal */}
+            {selectedOfferForCompletion && (
+              <ConfirmCompletionModal
+                isOpen={showConfirmCompletionModal}
+                onClose={() => setShowConfirmCompletionModal(false)}
+                offer={selectedOfferForCompletion}
+                loading={confirmLoading}
+                onConfirm={async () => {
+                  setConfirmLoading(true);
+                  try {
+                    await apiFetch(`/job-offers/${selectedOfferForCompletion.id}/complete`, { method: "POST" });
+                    toast.success("Pesanan telah diselesaikan!");
+                    setShowConfirmCompletionModal(false);
+                  } catch (err) {
+                    toast.error("Gagal menyelesaikan pesanan");
+                  } finally {
+                    setConfirmLoading(false);
+                  }
+                }}
+              />
+            )}
 
             {/* Offer Modal (Create) */}
             <CreateOfferModal

@@ -1,6 +1,6 @@
 import { memo } from "react";
 import { Conversation } from "./types";
-import { getDisplayName, getAvatarInitial } from "./utils";
+import { getDisplayName, getAvatarInitial, formatChatTime } from "./utils";
 
 interface ConversationItemProps {
   conv: Conversation;
@@ -45,10 +45,7 @@ const ConversationItem = memo(function ConversationItem({
             </h3>
             <span className="text-xs text-gray-500 flex-shrink-0">
               {conv.updated_at
-                ? new Date(conv.updated_at).toLocaleTimeString("id-ID", {
-                  hour: "2-digit",
-                  minute: "2-digit",
-                })
+                ? formatChatTime(conv.updated_at)
                 : ""}
             </span>
           </div>

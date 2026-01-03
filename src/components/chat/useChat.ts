@@ -67,21 +67,34 @@ export function useChat(initial?: {
   // mark read debounce
   const markReadTimerRef = useRef<number | null>(null);
 
+  // Sync state with props when they change externally (e.g. URL navigation)
+  useEffect(() => {
+    if (initial?.initialActiveId && initial.initialActiveId !== activeId) {
+      setActiveId(initial.initialActiveId);
+    }
+  }, [initial?.initialActiveId]);
+
+  useEffect(() => {
+    if (initial?.initialMe && initial.initialMe.id !== me?.id) {
+      setMe(initial.initialMe);
+    }
+  }, [initial?.initialMe]);
+
   const activeConv = useMemo(
     () => conversations.find((c) => c.id === activeId) || null,
     [conversations, activeId]
   );
 
-  // Sync activeIdRef whenever activeId changes
+  // Track activeIdRef whenever activeId changes
   useEffect(() => {
     activeIdRef.current = activeId;
   }, [activeId]);
 
   const otherUser = useMemo(() => {
-    if (!me || !activeConv) return null;
-    const isBuyer = me.id === activeConv.buyer_id;
+    if (!me?.id || !activeConv) return null;
+    const isBuyer = String(me.id).toLowerCase() === String(activeConv.buyer_id).toLowerCase();
     return isBuyer ? activeConv.seller : activeConv.buyer;
-  }, [me, activeConv]);
+  }, [me?.id, activeConv]);
 
   // Load data
   const loadMe = useCallback(async () => {
@@ -344,6 +357,12 @@ export function useChat(initial?: {
         } else if (payload.type === "offer_status_update") {
           // Update specific offer in state
           setOffers(prev => prev.map(o => o.id === payload.offer.id ? payload.offer : o));
+          // Also update conversation list to show the new status badge
+          setConversations(prev => prev.map(c =>
+            c.id === payload.offer.conversation_id
+              ? { ...c, latest_offer_status: payload.offer.status }
+              : c
+          ));
         }
 
         if (msg) {
