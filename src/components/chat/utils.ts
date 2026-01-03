@@ -43,3 +43,31 @@ export function formatChatTime(dateString: string): string {
     hour12: false,
   }).replace(":", ".");
 }
+
+/**
+ * Format date for divider (Hari ini, Kemarin, or Date)
+ */
+export function formatDateDivider(dateString: string): string {
+  if (!dateString) return "";
+  const date = new Date(dateString);
+  const now = new Date();
+
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const yesterday = new Date(today);
+  yesterday.setDate(yesterday.getDate() - 1);
+
+  const d = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+
+  if (d.getTime() === today.getTime()) {
+    return "Hari ini";
+  }
+  if (d.getTime() === yesterday.getTime()) {
+    return "Kemarin";
+  }
+
+  return date.toLocaleDateString("id-ID", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+}

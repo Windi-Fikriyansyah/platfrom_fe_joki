@@ -4,7 +4,7 @@ import { toast } from "sonner";
 import { useChat } from "./useChat";
 import { useRef, useEffect, useState, memo, useMemo } from "react";
 import { Conversation, Message } from "./types";
-import { getDisplayName, getAvatarInitial, formatChatTime } from "./utils";
+import { getDisplayName, getAvatarInitial, formatChatTime, formatDateDivider } from "./utils";
 import ConversationItem from "./ConversationItem";
 import MessageBubble from "./MessageBubble";
 import ChatHeader from "./ChatHeader";
@@ -275,88 +275,108 @@ const ChatUI = memo(function ChatUI({
                     <p>Start the conversation</p>
                   </div>
                 ) : (
-                  messages.map((msg) => {
+                  messages.map((msg, idx) => {
+                    const currentDate = new Date(msg.created_at).toDateString();
+                    const prevDate = idx > 0 ? new Date(messages[idx - 1].created_at).toDateString() : null;
+                    const showDivider = currentDate !== prevDate;
+
                     // System Message
                     const isSystemMessage = msg.type === 'system' || msg.text.includes("Pemberi Kerja telah melakukan pembayaran ke Platform");
-                    if (isSystemMessage) {
-                      return (
-                        <div key={msg.id} className="flex flex-col items-center my-6 animate-in fade-in zoom-in-95 duration-300">
-                          <span className="text-xs text-gray-400 mb-2">
-                            {formatChatTime(msg.created_at)}
-                          </span>
-                          <div className="bg-[#E8F5E9] text-gray-700 text-sm px-5 py-3 rounded-lg border border-[#C8E6C9] flex items-start gap-3 max-w-lg shadow-sm">
-                            <div className="w-5 h-5 rounded-full bg-green-500 flex-shrink-0 flex items-center justify-center mt-0.5">
-                              <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                              </svg>
-                            </div>
-                            <p className="leading-relaxed">{msg.text}</p>
-                          </div>
-                        </div>
-                      );
-                    }
-
-                    // Delivery Message
-                    if (msg.type === 'delivery') {
-                      const deliveryOffer = offers.find(o => o.status === 'delivered' || o.status === 'completed');
-                      return (
-                        <DeliveryMessage
-                          key={msg.id}
-                          isOwn={msg.sender_id === me?.id}
-                          timestamp={formatChatTime(msg.created_at)}
-                          onViewResult={() => {
-                            if (deliveryOffer) {
-                              setSelectedOfferForResult(deliveryOffer);
-                              setShowViewResultModal(true);
-                            } else {
-                              // If not in active offers, we might need to fetch it or finding from conversations
-                              const latestOffer = [...offers].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0];
-                              if (latestOffer) {
-                                setSelectedOfferForResult(latestOffer);
-                                setShowViewResultModal(true);
-                              }
-                            }
-                          }}
-                        />
-                      );
-                    }
-
-                    // Revision Message
-                    if (msg.type === 'revision') {
-                      return (
-                        <RevisionMessage
-                          key={msg.id}
-                          reason={msg.text}
-                          isOwn={msg.sender_id === me?.id}
-                          timestamp={formatChatTime(msg.created_at)}
-                          onViewRevision={() => {
-                            setSelectedRevisionText(msg.text);
-                            setShowViewRevisionModal(true);
-                          }}
-                        />
-                      );
-                    }
-
-                    const offer = msg.offer || (msg.text.startsWith("[OFFER]") ? offers.find(o => msg.text.includes(o.id)) : null);
-
-                    if (offer) {
-                      return (
-                        <OfferMessage
-                          key={msg.id}
-                          offer={offer}
-                          isMine={msg.sender_id === me?.id}
-                          onViewDetails={() => setViewOffer(offer)}
-                          onEdit={() => setEditOffer(offer)}
-                        />
-                      );
-                    }
 
                     return (
-                      <MessageBubble
-                        key={msg.id}
-                        msg={msg}
-                        isOwn={msg.sender_id === me?.id}
-                      />
+                      <div key={msg.id} className="flex flex-col">
+                        {showDivider && (
+                          <div className="flex items-center justify-center my-6">
+                            <div className="flex-1 border-b border-gray-100"></div>
+                            <span className="px-4 py-1 text-[11px] font-bold text-gray-400 bg-white border border-gray-100 rounded-full shadow-sm uppercase tracking-wider">
+                              {formatDateDivider(msg.created_at)}
+                            </span>
+                            <div className="flex-1 border-b border-gray-100"></div>
+                          </div>
+                        )}
+                        {(() => {
+                          if (isSystemMessage) {
+                            return (
+                              <div key={msg.id} className="flex flex-col items-center my-6 animate-in fade-in zoom-in-95 duration-300">
+                                <span className="text-xs text-gray-400 mb-2">
+                                  {formatChatTime(msg.created_at)}
+                                </span>
+                                <div className="bg-[#E8F5E9] text-gray-700 text-sm px-5 py-3 rounded-lg border border-[#C8E6C9] flex items-start gap-3 max-w-lg shadow-sm">
+                                  <div className="w-5 h-5 rounded-full bg-green-500 flex-shrink-0 flex items-center justify-center mt-0.5">
+                                    <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                    </svg>
+                                  </div>
+                                  <p className="leading-relaxed">{msg.text}</p>
+                                </div>
+                              </div>
+                            );
+                          }
+
+                          // Delivery Message
+                          if (msg.type === 'delivery') {
+                            const deliveryOffer = offers.find(o => o.status === 'delivered' || o.status === 'completed');
+                            return (
+                              <DeliveryMessage
+                                key={msg.id}
+                                isOwn={msg.sender_id === me?.id}
+                                timestamp={formatChatTime(msg.created_at)}
+                                onViewResult={() => {
+                                  if (deliveryOffer) {
+                                    setSelectedOfferForResult(deliveryOffer);
+                                    setShowViewResultModal(true);
+                                  } else {
+                                    // If not in active offers, we might need to fetch it or finding from conversations
+                                    const latestOffer = [...offers].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0];
+                                    if (latestOffer) {
+                                      setSelectedOfferForResult(latestOffer);
+                                      setShowViewResultModal(true);
+                                    }
+                                  }
+                                }}
+                              />
+                            );
+                          }
+
+                          // Revision Message
+                          if (msg.type === 'revision') {
+                            return (
+                              <RevisionMessage
+                                key={msg.id}
+                                reason={msg.text}
+                                isOwn={msg.sender_id === me?.id}
+                                timestamp={formatChatTime(msg.created_at)}
+                                onViewRevision={() => {
+                                  setSelectedRevisionText(msg.text);
+                                  setShowViewRevisionModal(true);
+                                }}
+                              />
+                            );
+                          }
+
+                          const offer = msg.offer || (msg.text.startsWith("[OFFER]") ? offers.find(o => msg.text.includes(o.id)) : null);
+
+                          if (offer) {
+                            return (
+                              <OfferMessage
+                                key={msg.id}
+                                offer={offer}
+                                isMine={msg.sender_id === me?.id}
+                                onViewDetails={() => setViewOffer(offer)}
+                                onEdit={() => setEditOffer(offer)}
+                              />
+                            );
+                          }
+
+                          return (
+                            <MessageBubble
+                              key={msg.id}
+                              msg={msg}
+                              isOwn={msg.sender_id === me?.id}
+                            />
+                          );
+                        })()}
+                      </div>
                     );
                   })
                 )}
