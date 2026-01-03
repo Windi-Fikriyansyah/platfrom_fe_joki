@@ -85,6 +85,17 @@ export function useChat(initial?: {
     [conversations, activeId]
   );
 
+  // Sync unread count to Navbar via custom event
+  useEffect(() => {
+    const totalUnread = conversations.reduce(
+      (sum, c) => sum + (c.unread_count || 0),
+      0
+    );
+    window.dispatchEvent(
+      new CustomEvent("chat-unread-count-update", { detail: totalUnread })
+    );
+  }, [conversations]);
+
   // Track activeIdRef whenever activeId changes
   useEffect(() => {
     activeIdRef.current = activeId;

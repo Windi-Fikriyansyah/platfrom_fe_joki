@@ -166,25 +166,25 @@ export default async function ChatPage(props: { searchParams: Promise<SP> }) {
       ),
       activeId
         ? fetchWithTimeout(
-            apiServerFetch<MessagesResponse>(
-              `/chat/conversations/${activeId}/messages?limit=50`
-            ),
-            5000
-          )
+          apiServerFetch<MessagesResponse>(
+            `/chat/conversations/${activeId}/messages?limit=50`
+          ),
+          5000
+        )
         : Promise.resolve({ success: true, data: [] } as any),
     ]);
 
     const conversations =
       convsRes.status === "fulfilled" &&
-      (convsRes.value as any)?.success &&
-      (convsRes.value as any)?.data
+        (convsRes.value as any)?.success &&
+        (convsRes.value as any)?.data
         ? (convsRes.value as any).data
         : [];
 
     const messages =
       messagesRes.status === "fulfilled" &&
-      (messagesRes.value as any)?.success &&
-      (messagesRes.value as any)?.data
+        (messagesRes.value as any)?.success &&
+        (messagesRes.value as any)?.data
         ? (messagesRes.value as any).data
         : [];
 
@@ -192,8 +192,7 @@ export default async function ChatPage(props: { searchParams: Promise<SP> }) {
       ? conversations.find((c: Conversation) => c.id === activeId)
       : undefined;
 
-    const validActiveId: string | null =
-      activeConv && activeId ? activeId : conversations[0]?.id ?? null;
+    const validActiveId: string | null = (activeConv && activeId) ? activeId : null;
 
     return (
       <div className="h-[calc(100vh-64px)] overflow-hidden bg-[#f5f6f8]">

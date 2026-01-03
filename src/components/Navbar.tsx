@@ -31,6 +31,7 @@ export default function Navbar() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userName, setUserName] = useState<string>("");
   const [userRole, setUserRole] = useState<string | null>(null);
+  const [unreadCount, setUnreadCount] = useState<number>(0);
 
   const router = useRouter();
   const { showToast } = useToast();
@@ -63,6 +64,7 @@ export default function Navbar() {
           setIsLoggedIn(true);
           setUserName(data.data?.name ?? "");
           setUserRole((data.data?.role ?? "").toLowerCase() || null);
+          setUnreadCount(data.data?.unread_count ?? 0);
         } else {
           setIsLoggedIn(false);
           setUserName("");
@@ -80,6 +82,40 @@ export default function Navbar() {
     syncAuth();
     return () => ac.abort();
   }, []);
+
+  // Sync unread count from custom event (from useChat.ts)
+  useEffect(() => {
+    const handleUpdate = (e: any) => {
+      if (typeof e.detail === "number") {
+        setUnreadCount(e.detail);
+      }
+    };
+    window.addEventListener("chat-unread-count-update", handleUpdate);
+    return () =>
+      window.removeEventListener("chat-unread-count-update", handleUpdate);
+  }, []);
+
+  // Periodic refresh for unread count (every 60s)
+  useEffect(() => {
+    if (!isLoggedIn || authLoading) return;
+
+    const interval = setInterval(async () => {
+      try {
+        const res = await fetch(
+          `${process.env.NEXT_PUBLIC_API_BASE_URL}/chat/unread-count`,
+          { credentials: "include" }
+        );
+        const data = await res.json();
+        if (data.success) {
+          setUnreadCount(data.data);
+        }
+      } catch (err) {
+        console.error("Failed to refresh unread count:", err);
+      }
+    }, 60000);
+
+    return () => clearInterval(interval);
+  }, [isLoggedIn, authLoading]);
 
   // Tutup dropdown ketika klik di luar
   useEffect(() => {
@@ -102,7 +138,7 @@ export default function Navbar() {
         method: "POST",
         credentials: "include",
       });
-    } catch {}
+    } catch { }
 
     setIsLoggedIn(false);
     setUserName("");
@@ -171,6 +207,11 @@ export default function Navbar() {
                 className="w-6 h-6 text-foreground"
                 strokeWidth={2}
               />
+              {unreadCount > 0 && (
+                <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white ring-2 ring-white">
+                  {unreadCount > 99 ? '99+' : unreadCount}
+                </span>
+              )}
             </Link>
 
             <Link
@@ -260,7 +301,14 @@ export default function Navbar() {
                         onClick={() => setAccountOpen(false)}
                         className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold hover:bg-black/5"
                       >
-                        <MessageCircle className="w-5 h-5 text-black/70" />
+                        <div className="relative">
+                          <MessageCircle className="w-5 h-5 text-black/70" />
+                          {unreadCount > 0 && (
+                            <span className="absolute -top-2 -right-2 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[9px] font-bold text-white ring-1 ring-white">
+                              {unreadCount > 99 ? '99+' : unreadCount}
+                            </span>
+                          )}
+                        </div>
                         <span>Kotak Pesan dan Order</span>
                       </Link>
 
@@ -324,19 +372,16 @@ export default function Navbar() {
             onClick={() => setOpen((v) => !v)}
           >
             <span
-              className={`w-6 h-0.5 bg-black transition-all ${
-                open ? "rotate-45 translate-y-2" : ""
-              }`}
+              className={`w-6 h-0.5 bg-black transition-all ${open ? "rotate-45 translate-y-2" : ""
+                }`}
             />
             <span
-              className={`w-6 h-0.5 bg-black transition-all ${
-                open ? "opacity-0" : ""
-              }`}
+              className={`w-6 h-0.5 bg-black transition-all ${open ? "opacity-0" : ""
+                }`}
             />
             <span
-              className={`w-6 h-0.5 bg-black transition-all ${
-                open ? "-rotate-45 -translate-y-2" : ""
-              }`}
+              className={`w-6 h-0.5 bg-black transition-all ${open ? "-rotate-45 -translate-y-2" : ""
+                }`}
             />
           </button>
         </div>
@@ -373,7 +418,14 @@ export default function Navbar() {
                   onClick={() => setOpen(false)}
                   className="h-11 rounded-xl border px-3 text-sm font-semibold hover:bg-black/5 flex items-center gap-3"
                 >
-                  <MessageCircle className="w-5 h-5 text-black/70" />
+                  <div className="relative">
+                    <MessageCircle className="w-5 h-5 text-black/70" />
+                    {unreadCount > 0 && (
+                      <span className="absolute -top-2 -right-2 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[9px] font-bold text-white ring-1 ring-white">
+                        {unreadCount > 99 ? '99+' : unreadCount}
+                      </span>
+                    )}
+                  </div>
                   Chat
                 </Link>
 
