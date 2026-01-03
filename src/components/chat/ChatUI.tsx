@@ -23,7 +23,8 @@ import RevisionModal from "./RevisionModal";
 import RevisionMessage from "./RevisionMessage";
 import ViewRevisionModal from "./ViewRevisionModal";
 import ConfirmCompletionModal from "./ConfirmCompletionModal";
-import { CheckCircle, RotateCw } from "lucide-react";
+import CancelOrderModal from "./CancelOrderModal";
+import { CheckCircle, RotateCw, XCircle } from "lucide-react";
 
 
 
@@ -80,7 +81,10 @@ const ChatUI = memo(function ChatUI({
   const [selectedRevisionText, setSelectedRevisionText] = useState("");
   const [showConfirmCompletionModal, setShowConfirmCompletionModal] = useState(false);
   const [selectedOfferForCompletion, setSelectedOfferForCompletion] = useState<JobOffer | null>(null);
+  const [showCancelOrderModal, setShowCancelOrderModal] = useState(false);
+  const [selectedOfferForCancel, setSelectedOfferForCancel] = useState<JobOffer | null>(null);
   const [confirmLoading, setConfirmLoading] = useState(false);
+  const [cancelLoading, setCancelLoading] = useState(false);
 
   // Track previous offer statuses to trigger toasts
   const prevOffersStatusRef = useRef<Record<string, string>>({});
@@ -479,6 +483,7 @@ const ChatUI = memo(function ChatUI({
                   </div>
                 )}
 
+
                 <form onSubmit={handleSend} className="flex items-center gap-3">
                   <button
                     type="button"
@@ -533,6 +538,10 @@ const ChatUI = memo(function ChatUI({
                     setSelectedOfferForResult(deliveryOffer);
                     setShowViewResultModal(true);
                   }
+                }}
+                onCancel={(offer) => {
+                  setSelectedOfferForCancel(offer);
+                  setShowCancelOrderModal(true);
                 }}
               />
             )}
@@ -592,6 +601,28 @@ const ChatUI = memo(function ChatUI({
               onClose={() => setShowViewResultModal(false)}
               offer={selectedOfferForResult}
             />
+
+            {/* Cancel Order Modal */}
+            {selectedOfferForCancel && (
+              <CancelOrderModal
+                isOpen={showCancelOrderModal}
+                onClose={() => setShowCancelOrderModal(false)}
+                offer={selectedOfferForCancel}
+                loading={cancelLoading}
+                onConfirm={async () => {
+                  setCancelLoading(true);
+                  try {
+                    await apiFetch(`/job-offers/${selectedOfferForCancel.id}/cancel`, { method: "POST" });
+                    toast.success("Pesanan telah dibatalkan!");
+                    setShowCancelOrderModal(false);
+                  } catch (err) {
+                    toast.error("Gagal membatalkan pesanan");
+                  } finally {
+                    setCancelLoading(false);
+                  }
+                }}
+              />
+            )}
 
             {/* Revision Modal */}
             {selectedOfferForRevision && (

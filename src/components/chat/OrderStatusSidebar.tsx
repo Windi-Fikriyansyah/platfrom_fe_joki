@@ -7,9 +7,10 @@ interface OrderStatusSidebarProps {
     isFreelancer: boolean;
     onEdit: (offer: JobOffer) => void;
     onViewResult?: () => void;
+    onCancel?: (offer: JobOffer) => void;
 }
 
-export default function OrderStatusSidebar({ offers, isLoading, isFreelancer, onEdit, onViewResult }: OrderStatusSidebarProps) {
+export default function OrderStatusSidebar({ offers, isLoading, isFreelancer, onEdit, onViewResult, onCancel }: OrderStatusSidebarProps) {
     // If no offers, show placeholder or empty state
     // But usually this sidebar is shown when there's an active order.
     // We'll show the latest offer.
@@ -85,6 +86,18 @@ export default function OrderStatusSidebar({ offers, isLoading, isFreelancer, on
                             className="w-full bg-blue-600 text-white text-sm font-medium py-2 rounded-lg hover:bg-blue-700 transition-colors"
                         >
                             Ubah Penawaran Kerja
+                        </button>
+                    )}
+
+                    {isFreelancer && activeOffer.status === 'pending' && (
+                        <button
+                            onClick={() => onCancel?.(activeOffer)}
+                            className="w-full flex items-center justify-center gap-2 py-2 px-3 bg-red-50 border border-red-200 text-red-600 font-bold text-xs rounded-xl transition-all active:scale-[0.98] shadow-sm mt-3 hover:bg-red-100"
+                        >
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                            <span>Batalkan Pesanan</span>
                         </button>
                     )}
 
