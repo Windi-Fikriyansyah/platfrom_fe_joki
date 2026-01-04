@@ -519,6 +519,13 @@ export function useChat(initial?: {
 
   const openConversation = useCallback((cid: string) => {
     setActiveId(cid);
+
+    // Sync with URL so refresh keeps the chat open
+    if (typeof window !== "undefined") {
+      const url = new URL(window.location.href);
+      url.searchParams.set("cid", cid);
+      window.history.pushState({}, "", url.toString());
+    }
   }, []);
 
   const updateOffer = useCallback(async (offerId: string, data: any) => {
