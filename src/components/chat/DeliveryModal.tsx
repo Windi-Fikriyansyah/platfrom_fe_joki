@@ -19,11 +19,13 @@ export default function DeliveryModal({
     offer,
     onSuccess,
 }: DeliveryModalProps) {
-    const [workUrl, setWorkUrl] = useState("");
+    const [workUrl, setWorkUrl] = useState(offer.work_delivery_link || "");
     const [files, setFiles] = useState<File[]>([]);
     const [agreed, setAgreed] = useState(false);
     const [uploading, setUploading] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
+
+    const isUpdate = offer.status === "delivered";
 
     if (!isOpen) return null;
 
@@ -101,7 +103,7 @@ export default function DeliveryModal({
                 {/* Header */}
                 <div className="px-5 py-4 border-b border-gray-50 flex items-center justify-between bg-white relative">
                     <div className="text-center w-full pr-6">
-                        <h3 className="text-base font-bold text-gray-900">Kirim hasil pekerjaan</h3>
+                        <h3 className="text-base font-bold text-gray-900">{isUpdate ? "Ubah hasil pekerjaan" : "Kirim hasil pekerjaan"}</h3>
                         <p className="text-[11px] font-medium text-gray-400 mt-0.5 uppercase tracking-wider">Order: {offer.order_code}</p>
                     </div>
                     <button
@@ -218,9 +220,9 @@ export default function DeliveryModal({
                         {uploading ? (
                             <div className="flex items-center justify-center gap-2">
                                 <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                                <span>Sedang mengirim...</span>
+                                <span>{isUpdate ? "Sedang memperbarui..." : "Sedang mengirim..."}</span>
                             </div>
-                        ) : "Kirim Pekerjaan"}
+                        ) : (isUpdate ? "Simpan Perubahan" : "Kirim Pekerjaan")}
                     </button>
                 </form>
             </div>

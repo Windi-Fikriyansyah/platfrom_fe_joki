@@ -129,6 +129,13 @@ const ChatUI = memo(function ChatUI({
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  const lastDeliveryId = useMemo(() => {
+    for (let i = messages.length - 1; i >= 0; i--) {
+      if (messages[i].type === 'delivery') return messages[i].id;
+    }
+    return null;
+  }, [messages]);
+
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!message.trim() || sending || !activeId) return;
@@ -321,6 +328,7 @@ const ChatUI = memo(function ChatUI({
                                 key={msg.id}
                                 isOwn={msg.sender_id === me?.id}
                                 timestamp={formatChatTime(msg.created_at)}
+                                isDisabled={msg.id !== lastDeliveryId}
                                 onViewResult={() => {
                                   if (deliveryOffer) {
                                     setSelectedOfferForResult(deliveryOffer);
@@ -406,7 +414,7 @@ const ChatUI = memo(function ChatUI({
                         );
                       }
 
-                      if (latestOffer && (latestOffer.status === "paid" || latestOffer.status === "working")) {
+                      if (latestOffer && (latestOffer.status === "paid" || latestOffer.status === "working" || latestOffer.status === "delivered")) {
                         return (
                           <button
                             onClick={() => setShowDeliveryModal(true)}
@@ -415,7 +423,7 @@ const ChatUI = memo(function ChatUI({
                             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a1 1 0 001 1h14a1 1 0 001-1v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
                             </svg>
-                            Upload Pekerjaan
+                            {latestOffer.status === "delivered" ? "Ubah Hasil Pekerjaan" : "Upload Pekerjaan"}
                           </button>
                         );
                       }
