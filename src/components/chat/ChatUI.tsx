@@ -24,6 +24,7 @@ import RevisionMessage from "./RevisionMessage";
 import ViewRevisionModal from "./ViewRevisionModal";
 import ConfirmCompletionModal from "./ConfirmCompletionModal";
 import CancelOrderModal from "./CancelOrderModal";
+import ReviewModal from "./ReviewModal";
 import { CheckCircle, RotateCw, XCircle } from "lucide-react";
 
 
@@ -85,6 +86,8 @@ const ChatUI = memo(function ChatUI({
   const [selectedOfferForCancel, setSelectedOfferForCancel] = useState<JobOffer | null>(null);
   const [confirmLoading, setConfirmLoading] = useState(false);
   const [cancelLoading, setCancelLoading] = useState(false);
+  const [showReviewModal, setShowReviewModal] = useState(false);
+  const [selectedOfferForReview, setSelectedOfferForReview] = useState<JobOffer | null>(null);
 
   // Track previous offer statuses to trigger toasts
   const prevOffersStatusRef = useRef<Record<string, string>>({});
@@ -685,12 +688,26 @@ const ChatUI = memo(function ChatUI({
                     await apiFetch(`/job-offers/${selectedOfferForCompletion.id}/complete`, { method: "POST" });
                     toast.success("Pesanan telah diselesaikan!");
                     setShowConfirmCompletionModal(false);
+
+                    // Trigger Review Modal
+                    setSelectedOfferForReview(selectedOfferForCompletion);
+                    setShowReviewModal(true);
                   } catch (err) {
                     toast.error("Gagal menyelesaikan pesanan");
                   } finally {
                     setConfirmLoading(false);
                   }
                 }}
+              />
+            )}
+
+            {/* Review Modal */}
+            {selectedOfferForReview && (
+              <ReviewModal
+                isOpen={showReviewModal}
+                onClose={() => setShowReviewModal(false)}
+                offerId={selectedOfferForReview.id}
+                orderCode={selectedOfferForReview.order_code}
               />
             )}
 

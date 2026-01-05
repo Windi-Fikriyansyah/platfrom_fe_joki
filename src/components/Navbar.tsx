@@ -154,30 +154,35 @@ export default function Navbar() {
   }
 
   return (
-    <header className="sticky top-0 z-40 border-b bg-white/90 backdrop-blur">
+    <header className="sticky top-0 z-40 border-b border-primary/10 bg-white/80 backdrop-blur-xl transition-all">
+      {/* Top accent line */}
+      <div className="h-1 bg-gradient-to-r from-primary via-secondary to-primary w-full" />
+
       <div className="mx-auto w-full max-w-7xl px-3 sm:px-4 md:px-6 lg:px-8">
         {/* Top row */}
         <div className="flex h-14 sm:h-16 items-center justify-between gap-2 sm:gap-3">
           <Link
             href="/"
-            className="flex items-center gap-2 font-extrabold text-base sm:text-lg"
+            className="flex items-center gap-2 font-extrabold text-base sm:text-lg group"
           >
-            <span className="inline-flex h-8 sm:h-9 w-8 sm:w-9 items-center justify-center rounded-lg sm:rounded-xl bg-black text-white text-xs sm:text-sm font-bold">
+            <span className="inline-flex h-8 sm:h-9 w-8 sm:w-9 items-center justify-center rounded-lg sm:rounded-xl bg-gradient-to-br from-primary to-secondary text-white text-xs sm:text-sm font-bold shadow-lg shadow-primary/20 group-hover:scale-110 transition-transform">
               SM
             </span>
-            SkripsiMate
+            <span className="bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+              SkripsiMate
+            </span>
           </Link>
 
           {/* Desktop Search */}
           <div className="hidden md:block flex-1 mx-3 lg:mx-4">
-            <div className="relative max-w-2xl">
+            <div className="relative max-w-2xl group">
               <Input
                 placeholder="Cari layanan… (olah data, proofreading, PPT sidang)"
-                className="pr-24 text-sm"
+                className="pr-24 text-sm border-primary/10 focus:border-primary/40 focus:ring-primary/20 transition-all rounded-xl"
               />
               <Link
                 href="/search"
-                className="absolute right-2 top-1/2 -translate-y-1/2 rounded-lg lg:rounded-xl bg-black px-3 lg:px-4 py-1.5 lg:py-2 text-xs lg:text-sm font-semibold text-white"
+                className="absolute right-1.5 top-1/2 -translate-y-1/2 rounded-lg lg:rounded-xl bg-primary px-3 lg:px-4 py-1.5 lg:py-2 text-xs lg:text-sm font-semibold text-white hover:bg-primary/90 transition-colors shadow-sm"
               >
                 Cari
               </Link>
@@ -188,27 +193,27 @@ export default function Navbar() {
           <nav className="hidden md:flex items-center gap-1 lg:gap-2 shrink-0">
             <Link
               href="/dashboard"
-              className="rounded-lg lg:rounded-xl px-2 lg:px-3 py-1.5 lg:py-2 text-xs lg:text-sm font-semibold hover:bg-black/5"
+              className="rounded-lg lg:rounded-xl px-2 lg:px-3 py-1.5 lg:py-2 text-xs lg:text-sm font-semibold hover:bg-primary/5 hover:text-primary transition-colors"
             >
               Jobboard
             </Link>
             <Link
               href="/search"
-              className="rounded-lg lg:rounded-xl px-2 lg:px-3 py-1.5 lg:py-2 text-xs lg:text-sm font-semibold hover:bg-black/5"
+              className="rounded-lg lg:rounded-xl px-2 lg:px-3 py-1.5 lg:py-2 text-xs lg:text-sm font-semibold hover:bg-primary/5 hover:text-primary transition-colors"
             >
               Layanan
             </Link>
 
             <Link
               href="/chat"
-              className="relative flex items-center justify-center w-9 h-9 rounded-full hover:bg-black/5"
+              className="relative flex items-center justify-center w-9 h-9 rounded-full hover:bg-primary/5 hover:text-primary transition-colors"
             >
               <MessageCircle
-                className="w-6 h-6 text-foreground"
+                className="w-5 h-5"
                 strokeWidth={2}
               />
               {unreadCount > 0 && (
-                <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white ring-2 ring-white">
+                <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-secondary text-[10px] font-bold text-white ring-2 ring-white">
                   {unreadCount > 99 ? '99+' : unreadCount}
                 </span>
               )}
@@ -216,9 +221,9 @@ export default function Navbar() {
 
             <Link
               href="/notifications"
-              className="relative flex items-center justify-center w-9 h-9 rounded-full hover:bg-black/5"
+              className="relative flex items-center justify-center w-9 h-9 rounded-full hover:bg-primary/5 hover:text-primary transition-colors"
             >
-              <Bell className="w-6 h-6 text-foreground" strokeWidth={2} />
+              <Bell className="w-5 h-5" strokeWidth={2} />
             </Link>
 
             {userRole === "client" && (
@@ -230,27 +235,25 @@ export default function Navbar() {
                       `/auth/login?next=${encodeURIComponent("/start-selling")}`
                     );
                 }}
-                className="rounded-lg lg:rounded-xl px-2 lg:px-3 py-1.5 lg:py-2 text-xs lg:text-sm font-semibold hover:bg-black/5"
+                className="rounded-lg lg:rounded-xl px-2 lg:px-3 py-1.5 lg:py-2 text-xs lg:text-sm font-semibold text-secondary hover:bg-secondary/5 transition-colors"
               >
                 Daftar Freelancer
               </button>
             )}
 
             {/* LOGIN / AKUN */}
-            {/* LOGIN / AKUN */}
             {authLoading ? (
-              // Skeleton biar gak “kedip” Sign in
               <div className="flex items-center gap-2">
-                <div className="h-9 w-9 rounded-full bg-black/5 animate-pulse" />
-                <div className="h-9 w-28 rounded-xl bg-black/5 animate-pulse" />
+                <div className="h-9 w-9 rounded-full bg-primary/5 animate-pulse" />
+                <div className="h-9 w-28 rounded-xl bg-primary/5 animate-pulse" />
               </div>
             ) : isLoggedIn ? (
               <div className="relative" ref={accountRef}>
                 <button
                   onClick={() => setAccountOpen((v) => !v)}
-                  className="flex items-center gap-2 rounded-xl px-2 lg:px-3 py-1.5 lg:py-2 text-xs lg:text-sm font-semibold hover:bg-black/5"
+                  className="flex items-center gap-2 rounded-xl px-2 lg:px-3 py-1.5 lg:py-2 text-xs lg:text-sm font-semibold hover:bg-primary/5 transition-colors"
                 >
-                  <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-black text-white text-xs font-bold">
+                  <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-primary to-secondary text-white text-xs font-bold shadow-sm">
                     {(userName?.trim()?.[0] || "U").toUpperCase()}
                   </span>
                   <span className="max-w-[140px] truncate">{userName}</span>
@@ -258,17 +261,17 @@ export default function Navbar() {
                 </button>
 
                 {accountOpen && (
-                  <div className="absolute right-0 mt-2 w-72 overflow-hidden rounded-2xl border bg-white shadow-xl">
+                  <div className="absolute right-0 mt-2 w-72 overflow-hidden rounded-2xl border border-primary/10 bg-white shadow-2xl animate-in fade-in slide-in-from-top-2 duration-200">
                     {/* Header dropdown */}
-                    <div className="px-4 py-3 border-b bg-gradient-to-b from-black/[0.02] to-transparent">
-                      <p className="text-xs text-black/50">Masuk sebagai</p>
+                    <div className="px-4 py-3 border-b border-primary/10 bg-gradient-to-b from-primary/[0.03] to-transparent">
+                      <p className="text-xs text-primary/50">Masuk sebagai</p>
                       <p className="text-sm font-semibold truncate">
                         {userName}
                       </p>
 
                       {userRole && (
-                        <div className="mt-2 inline-flex items-center gap-2 rounded-full border px-2.5 py-1 text-[11px] font-semibold text-black/70">
-                          <span className="inline-block h-1.5 w-1.5 rounded-full bg-black/60" />
+                        <div className="mt-2 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-2.5 py-1 text-[11px] font-semibold text-primary">
+                          <span className="inline-block h-1.5 w-1.5 rounded-full bg-primary" />
                           {userRole}
                         </div>
                       )}
@@ -280,9 +283,9 @@ export default function Navbar() {
                         <Link
                           href="/freelancer/dashboard"
                           onClick={() => setAccountOpen(false)}
-                          className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold hover:bg-black/5"
+                          className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold hover:bg-primary/5 hover:text-primary transition-colors"
                         >
-                          <Briefcase className="w-5 h-5 text-black/70" />
+                          <Briefcase className="w-5 h-5 text-primary/70" />
                           <span>Dashboard Freelancer</span>
                         </Link>
                       )}
@@ -290,21 +293,21 @@ export default function Navbar() {
                       <Link
                         href="/dashboard"
                         onClick={() => setAccountOpen(false)}
-                        className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold hover:bg-black/5"
+                        className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold hover:bg-primary/5 hover:text-primary transition-colors"
                       >
-                        <Settings className="w-5 h-5 text-black/70" />
+                        <Settings className="w-5 h-5 text-primary/70" />
                         <span>Pengaturan</span>
                       </Link>
 
                       <Link
                         href="/chat"
                         onClick={() => setAccountOpen(false)}
-                        className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold hover:bg-black/5"
+                        className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold hover:bg-primary/5 hover:text-primary transition-colors"
                       >
                         <div className="relative">
-                          <MessageCircle className="w-5 h-5 text-black/70" />
+                          <MessageCircle className="w-5 h-5 text-primary/70" />
                           {unreadCount > 0 && (
-                            <span className="absolute -top-2 -right-2 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[9px] font-bold text-white ring-1 ring-white">
+                            <span className="absolute -top-2 -right-2 flex h-4 w-4 items-center justify-center rounded-full bg-secondary text-[9px] font-bold text-white ring-1 ring-white">
                               {unreadCount > 99 ? '99+' : unreadCount}
                             </span>
                           )}
@@ -315,40 +318,39 @@ export default function Navbar() {
                       <Link
                         href="/notifications"
                         onClick={() => setAccountOpen(false)}
-                        className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold hover:bg-black/5"
+                        className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold hover:bg-primary/5 hover:text-primary transition-colors"
                       >
-                        <Bell className="w-5 h-5 text-black/70" />
+                        <Bell className="w-5 h-5 text-primary/70" />
                         <span>Notifikasi</span>
                       </Link>
 
                       <Link
                         href="/profile"
                         onClick={() => setAccountOpen(false)}
-                        className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold hover:bg-black/5"
+                        className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold hover:bg-primary/5 hover:text-primary transition-colors"
                       >
-                        <User className="w-5 h-5 text-black/70" />
+                        <User className="w-5 h-5 text-primary/70" />
                         <span>Profil Saya</span>
                       </Link>
 
-                      {/* Biar gak kedip juga, hanya tampil setelah authLoading=false (sudah) */}
                       {userRole === "client" && (
                         <button
                           onClick={() => {
                             router.push("/start-selling");
                             setAccountOpen(false);
                           }}
-                          className="w-full flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold hover:bg-black/5"
+                          className="w-full flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold hover:bg-secondary/5 hover:text-secondary transition-colors"
                         >
-                          <UserPlus className="w-5 h-5 text-black/70" />
+                          <UserPlus className="w-5 h-5 text-secondary/70" />
                           <span>Daftar Freelancer</span>
                         </button>
                       )}
                     </div>
 
-                    <div className="border-t p-2">
+                    <div className="border-t border-primary/10 p-2">
                       <button
                         onClick={handleLogout}
-                        className="w-full flex items-center justify-center gap-2 rounded-xl px-3 py-2.5 text-sm font-semibold text-white bg-red-600 hover:bg-red-700"
+                        className="w-full flex items-center justify-center gap-2 rounded-xl px-3 py-2.5 text-sm font-semibold text-white bg-red-500 hover:bg-red-600 shadow-sm shadow-red-500/20 transition-all hover:scale-[1.02] active:scale-95"
                       >
                         <LogOut className="w-5 h-5" />
                         Keluar
@@ -359,7 +361,7 @@ export default function Navbar() {
               </div>
             ) : (
               <Link href="/auth/login">
-                <Button className="cursor-pointer bg-primary text-primary-foreground hover:bg-primary/80 transition-colors">
+                <Button className="cursor-pointer bg-primary text-white hover:bg-primary/90 transition-all shadow-md shadow-primary/20 rounded-xl px-6">
                   Sign in
                 </Button>
               </Link>
@@ -368,60 +370,60 @@ export default function Navbar() {
 
           {/* Mobile menu toggle */}
           <button
-            className="md:hidden shrink-0 flex flex-col gap-1.5"
+            className="md:hidden shrink-0 flex flex-col gap-1.5 p-2 rounded-lg hover:bg-primary/5 transition-colors"
             onClick={() => setOpen((v) => !v)}
           >
             <span
-              className={`w-6 h-0.5 bg-black transition-all ${open ? "rotate-45 translate-y-2" : ""
+              className={`w-6 h-0.5 bg-primary transition-all ${open ? "rotate-45 translate-y-2" : ""
                 }`}
             />
             <span
-              className={`w-6 h-0.5 bg-black transition-all ${open ? "opacity-0" : ""
+              className={`w-6 h-0.5 bg-primary transition-all ${open ? "opacity-0" : ""
                 }`}
             />
             <span
-              className={`w-6 h-0.5 bg-black transition-all ${open ? "-rotate-45 -translate-y-2" : ""
+              className={`w-6 h-0.5 bg-primary transition-all ${open ? "-rotate-45 -translate-y-2" : ""
                 }`}
             />
           </button>
         </div>
 
         {/* Mobile Search */}
-        <div className="md:hidden pb-2">
-          <div className="relative">
-            <Input placeholder="Cari layanan…" className="pr-20 text-xs" />
+        <div className="md:hidden pb-2 px-1">
+          <div className="relative group">
+            <Input placeholder="Cari layanan…" className="pr-20 text-xs border-primary/10 focus:border-primary/40 focus:ring-primary/20 rounded-xl" />
             <Link
               href="/search"
-              className="absolute right-1 top-1/2 -translate-y-1/2 rounded-lg bg-black px-2 py-1.5 text-xs font-semibold text-white"
+              className="absolute right-1 top-1/2 -translate-y-1/2 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-white shadow-sm"
             >
               Cari
             </Link>
           </div>
         </div>
 
-        {/* Mobile dropdown (dibesarkan + icon + nama) */}
+        {/* Mobile dropdown */}
         {open && (
-          <div id="mobile-menu" className="md:hidden pb-3">
-            <div className="rounded-2xl border bg-white p-3">
+          <div id="mobile-menu" className="md:hidden pb-3 animate-in slide-in-from-top-4 duration-300">
+            <div className="rounded-2xl border border-primary/10 bg-white p-3 shadow-xl">
               <div className="grid grid-cols-1 gap-2">
                 <Link
                   href="/dashboard"
                   onClick={() => setOpen(false)}
-                  className="h-11 rounded-xl border px-3 text-sm font-semibold hover:bg-black/5 flex items-center gap-3"
+                  className="h-11 rounded-xl border border-primary/5 px-3 text-sm font-semibold hover:bg-primary/5 hover:text-primary flex items-center gap-3 transition-colors"
                 >
-                  <LayoutDashboard className="w-5 h-5 text-black/70" />
+                  <LayoutDashboard className="w-5 h-5 text-primary/70" />
                   Dashboard
                 </Link>
 
                 <Link
                   href="/chat"
                   onClick={() => setOpen(false)}
-                  className="h-11 rounded-xl border px-3 text-sm font-semibold hover:bg-black/5 flex items-center gap-3"
+                  className="h-11 rounded-xl border border-primary/5 px-3 text-sm font-semibold hover:bg-primary/5 hover:text-primary flex items-center gap-3 transition-colors"
                 >
                   <div className="relative">
-                    <MessageCircle className="w-5 h-5 text-black/70" />
+                    <MessageCircle className="w-5 h-5 text-primary/70" />
                     {unreadCount > 0 && (
-                      <span className="absolute -top-2 -right-2 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[9px] font-bold text-white ring-1 ring-white">
+                      <span className="absolute -top-2 -right-2 flex h-4 w-4 items-center justify-center rounded-full bg-secondary text-[9px] font-bold text-white ring-1 ring-white">
                         {unreadCount > 99 ? '99+' : unreadCount}
                       </span>
                     )}
@@ -432,9 +434,9 @@ export default function Navbar() {
                 <Link
                   href="/notifications"
                   onClick={() => setOpen(false)}
-                  className="h-11 rounded-xl border px-3 text-sm font-semibold hover:bg-black/5 flex items-center gap-3"
+                  className="h-11 rounded-xl border border-primary/5 px-3 text-sm font-semibold hover:bg-primary/5 hover:text-primary flex items-center gap-3 transition-colors"
                 >
-                  <Bell className="w-5 h-5 text-black/70" />
+                  <Bell className="w-5 h-5 text-primary/70" />
                   Notifikasi
                 </Link>
 
@@ -450,9 +452,9 @@ export default function Navbar() {
                           )}`
                         );
                     }}
-                    className="h-11 rounded-xl border px-3 text-sm font-semibold hover:bg-black/5 flex items-center gap-3"
+                    className="h-11 rounded-xl border border-secondary/10 px-3 text-sm font-semibold hover:bg-secondary/5 text-secondary flex items-center gap-3 transition-colors"
                   >
-                    <UserPlus className="w-5 h-5 text-black/70" />
+                    <UserPlus className="w-5 h-5" />
                     Daftar Freelancer
                   </button>
                 )}
@@ -460,7 +462,7 @@ export default function Navbar() {
                 {isLoggedIn ? (
                   <button
                     onClick={handleLogout}
-                    className="h-11 rounded-xl bg-red-600 text-white text-sm font-semibold hover:bg-red-700 flex items-center justify-center gap-2"
+                    className="h-11 rounded-xl bg-red-500 text-white text-sm font-semibold hover:bg-red-600 flex items-center justify-center gap-2 shadow-lg shadow-red-500/10 transition-all active:scale-95"
                   >
                     <LogOut className="w-5 h-5" />
                     Keluar
@@ -470,15 +472,15 @@ export default function Navbar() {
                     <Link
                       href="/auth/login"
                       onClick={() => setOpen(false)}
-                      className="h-11 rounded-xl border px-3 text-sm font-semibold hover:bg-black/5 flex items-center gap-3"
+                      className="h-11 rounded-xl border border-primary/10 px-3 text-sm font-semibold hover:bg-primary/5 flex items-center gap-3 transition-colors"
                     >
-                      <User className="w-5 h-5 text-black/70" />
+                      <User className="w-5 h-5 text-primary/70" />
                       Masuk
                     </Link>
                     <Link
                       href="/auth/register"
                       onClick={() => setOpen(false)}
-                      className="h-11 rounded-xl bg-black text-white px-3 text-sm font-semibold hover:bg-black/90 flex items-center gap-3"
+                      className="h-11 rounded-xl bg-gradient-to-r from-primary to-secondary text-white px-3 text-sm font-semibold hover:opacity-90 flex items-center gap-3 shadow-lg shadow-primary/20 transition-all active:scale-95"
                     >
                       <UserPlus className="w-5 h-5 text-white/90" />
                       Daftar
