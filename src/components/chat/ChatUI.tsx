@@ -25,7 +25,7 @@ import ViewRevisionModal from "./ViewRevisionModal";
 import ConfirmCompletionModal from "./ConfirmCompletionModal";
 import CancelOrderModal from "./CancelOrderModal";
 import ReviewModal from "./ReviewModal";
-import { CheckCircle, RotateCw, XCircle } from "lucide-react";
+import { CheckCircle, RotateCw, XCircle, Paperclip } from "lucide-react";
 
 
 
@@ -69,7 +69,9 @@ const ChatUI = memo(function ChatUI({
   });
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [sending, setSending] = useState(false);
+  const [uploadingFile, setUploadingFile] = useState(false);
 
   const [showOfferModal, setShowOfferModal] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
@@ -90,6 +92,7 @@ const ChatUI = memo(function ChatUI({
   const [cancelLoading, setCancelLoading] = useState(false);
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [selectedOfferForReview, setSelectedOfferForReview] = useState<JobOffer | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
 
   // Track previous offer statuses to trigger toasts
   const prevOffersStatusRef = useRef<Record<string, string>>({});
@@ -141,6 +144,15 @@ const ChatUI = memo(function ChatUI({
     return null;
   }, [messages]);
 
+  const filteredMessages = useMemo(() => {
+    if (!searchQuery.trim()) return messages;
+    const q = searchQuery.toLowerCase();
+    return messages.filter(m =>
+      m.text.toLowerCase().includes(q) ||
+      (m.type === 'system' && m.text.toLowerCase().includes(q))
+    );
+  }, [messages, searchQuery]);
+
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!message.trim() || sending || !activeId) return;
@@ -153,6 +165,50 @@ const ChatUI = memo(function ChatUI({
       console.error("Failed to send message:", error);
     } finally {
       setSending(false);
+    }
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !activeId) return;
+
+    // 5MB limit
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Ukuran file maksimal 5MB");
+      return;
+    }
+
+    setUploadingFile(true);
+    const formData = new FormData();
+    formData.append("file", file);
+
+    try {
+      const json = await apiFetch<{ success: boolean; data: { url: string; file_name: string }, message?: string }>(`/chat/upload`, {
+        method: "POST",
+        body: formData,
+      });
+
+      if (json.success) {
+        // Send a message of type 'file'
+        await apiFetch(`/chat/conversations/${activeId}/messages`, {
+          method: "POST",
+          body: JSON.stringify({
+            type: "file",
+            file_url: json.data.url,
+            file_name: json.data.file_name,
+            text: `Sent a file: ${json.data.file_name}`
+          }),
+        });
+        // Success toast is optional as message will appear
+      } else {
+        toast.error(json.message || "Gagal upload file");
+      }
+    } catch (err) {
+      console.error("Upload error:", err);
+      toast.error("Gagal mengirim file");
+    } finally {
+      setUploadingFile(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
     }
   };
 
@@ -278,18 +334,19 @@ const ChatUI = memo(function ChatUI({
               <ChatHeader
                 otherUser={otherUser ?? null}
                 wsConnected={wsConnected}
+                onSearch={setSearchQuery}
               />
 
               {/* Messages Area */}
               <div className="flex-1 overflow-y-auto p-4 space-y-4 flex flex-col">
-                {messages.length === 0 ? (
+                {filteredMessages.length === 0 ? (
                   <div className="flex items-center justify-center h-full text-gray-400">
-                    <p>Start the conversation</p>
+                    <p>{searchQuery ? "Pesan tidak ditemukan" : "Start the conversation"}</p>
                   </div>
                 ) : (
-                  messages.map((msg, idx) => {
+                  filteredMessages.map((msg, idx) => {
                     const currentDate = new Date(msg.created_at).toDateString();
-                    const prevDate = idx > 0 ? new Date(messages[idx - 1].created_at).toDateString() : null;
+                    const prevDate = idx > 0 ? new Date(filteredMessages[idx - 1].created_at).toDateString() : null;
                     const showDivider = currentDate !== prevDate;
 
                     // System Message
@@ -518,18 +575,38 @@ const ChatUI = memo(function ChatUI({
 
 
                 <form onSubmit={handleSend} className="flex items-center gap-3">
-                  <button
-                    type="button"
-                    className="p-2 hover:bg-gray-100 rounded-full transition"
-                  >
-                    <svg
-                      className="w-6 h-6 text-blue-600"
-                      fill="currentColor"
-                      viewBox="0 0 24 24"
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={handleFileChange}
+                    className="hidden"
+                  />
+                  <div className="flex items-center">
+                    <button
+                      type="button"
+                      className="p-2 hover:bg-gray-100 rounded-full transition"
                     >
-                      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm3.5-9c.83 0 1.5-.67 1.5-1.5S16.33 8 15.5 8 14 8.67 14 9.5s.67 1.5 1.5 1.5zm-7 0c.83 0 1.5-.67 1.5-1.5S9.33 8 8.5 8 7 8.67 7 9.5 7.67 11 8.5 11z" />
-                    </svg>
-                  </button>
+                      <svg
+                        className="w-6 h-6 text-blue-600"
+                        fill="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm3.5-9c.83 0 1.5-.67 1.5-1.5S16.33 8 15.5 8 14 8.67 14 9.5s.67 1.5 1.5 1.5zm-7 0c.83 0 1.5-.67 1.5-1.5S9.33 8 8.5 8 7 8.67 7 9.5 7.67 11 8.5 11z" />
+                      </svg>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={uploadingFile}
+                      className="p-2 hover:bg-gray-100 rounded-full transition text-blue-600 disabled:opacity-50"
+                    >
+                      {uploadingFile ? (
+                        <div className="w-6 h-6 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+                      ) : (
+                        <Paperclip className="w-6 h-6" />
+                      )}
+                    </button>
+                  </div>
 
                   <input
                     type="text"

@@ -2,6 +2,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
+import { getMediaUrl } from "@/lib/api";
 
 interface LazyImageProps extends React.ImgHTMLAttributes<HTMLImageElement> {
     src: string;
@@ -61,7 +62,7 @@ export default function LazyImage({
 
             {isVisible && (
                 <img
-                    src={hasError ? fallbackSrc : src}
+                    src={hasError ? fallbackSrc : getMediaUrl(src)}
                     alt={alt}
                     className={`h-full w-full object-cover transition-opacity duration-500 ${isLoaded ? "opacity-100" : "opacity-0"
                         }`}

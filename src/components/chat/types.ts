@@ -73,9 +73,11 @@ export type Message = {
   id: string;
   conversation_id: string;
   sender_id: string;
-  type?: "text" | "offer" | "system" | "delivery" | "revision";
+  type?: "text" | "offer" | "system" | "delivery" | "revision" | "file";
   text: string;
   created_at: string;
+  file_url?: string;
+  file_name?: string;
 
   // For offer messages (text starts with [OFFER])
   offer_id?: string;

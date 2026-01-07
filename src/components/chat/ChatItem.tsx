@@ -1,6 +1,7 @@
 "use client";
 
 import type { Conversation, Me } from "./types";
+import { getMediaUrl } from "@/lib/api";
 
 export default function ChatItem({
   me,
@@ -30,15 +31,14 @@ export default function ChatItem({
   return (
     <button
       onClick={onClick}
-      className={`w-full text-left px-3 py-3 flex gap-3 items-center hover:bg-black/5 ${
-        active ? "bg-black/5" : ""
-      }`}
+      className={`w-full text-left px-3 py-3 flex gap-3 items-center hover:bg-black/5 ${active ? "bg-black/5" : ""
+        }`}
     >
       <div className="h-11 w-11 rounded-full bg-black/10 overflow-hidden flex items-center justify-center">
         {photoUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
-            src={photoUrl}
+            src={getMediaUrl(photoUrl)}
             alt={displayName}
             className="h-full w-full object-cover"
           />

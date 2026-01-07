@@ -1,4 +1,11 @@
 export const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL!;
+export const MEDIA_BASE = API_BASE.replace(/\/api$/, "");
+
+export function getMediaUrl(path: string | undefined): string {
+  if (!path) return "";
+  if (path.startsWith("http")) return path;
+  return `${MEDIA_BASE}${path.startsWith("/") ? "" : "/"}${path}`;
+}
 
 export async function apiFetch<T>(
   path: string,
