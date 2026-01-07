@@ -33,7 +33,7 @@ const categories = [
 
 const faqs = [
     { q: "Bagaimana cara memilih mentor yang tepat?", a: "Lihat rating, portfolio, dan spesialisasi bidang mereka di profil mentor." },
-    { q: "Apakah pembayaran di SkripsiMate aman?", a: "Ya, kami menggunakan sistem escrow di mana dana hanya dilepas setelah Anda menyetujui hasil pekerjaan." },
+    { q: "Apakah pembayaran di jokiaja.com aman?", a: "Ya, kami menggunakan sistem escrow di mana dana hanya dilepas setelah Anda menyetujui hasil pekerjaan." },
     { q: "Apa yang harus dilakukan jika hasil revisi tidak sesuai?", a: "Anda dapat mengajukan komplain atau meminta revisi tambahan melalui fitur chat." },
     { q: "Berapa lama rata-rata sesi bimbingan?", a: "Tergantung kesepakatan, namun biasanya sesi konsultasi berlangsung 1-2 jam per sesi." },
 ];

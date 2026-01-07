@@ -26,7 +26,7 @@ export default function ContactPage() {
                         </h1>
 
                         <p className="text-xl text-foreground/60 mb-12 font-medium leading-relaxed max-w-lg">
-                            Tim support SkripsiMate siap membantu Anda kapan saja. Kami biasanya merespons dalam waktu kurang dari 2 jam di jam kerja.
+                            Tim support jokiaja.com siap membantu Anda kapan saja. Kami biasanya merespons dalam waktu kurang dari 2 jam di jam kerja.
                         </p>
 
                         <div className="space-y-6">
@@ -36,7 +36,7 @@ export default function ContactPage() {
                                 </div>
                                 <div>
                                     <p className="text-xs font-black text-foreground/40 uppercase tracking-widest">Email Support</p>
-                                    <p className="text-lg font-bold text-foreground">support@skripsimate.com</p>
+                                    <p className="text-lg font-bold text-foreground">support@jokiaja.com</p>
                                 </div>
                             </div>
 

@@ -51,9 +51,11 @@
   --card-foreground: oklch(0.2 0.04 285);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.2 0.04 285);
-  --primary: oklch(0.55 0.22 260); /* Indigo */
+  --primary: oklch(0.55 0.22 260);
+  /* Indigo */
   --primary-foreground: oklch(0.99 0 0);
-  --secondary: oklch(0.65 0.18 350); /* Rose/Pinkish */
+  --secondary: oklch(0.65 0.18 350);
+  /* Rose/Pinkish */
   --secondary-foreground: oklch(0.99 0 0);
   --muted: oklch(0.96 0.01 285);
   --muted-foreground: oklch(0.45 0.02 285);
@@ -65,9 +67,12 @@
   --ring: oklch(0.55 0.22 260);
   --chart-1: oklch(0.55 0.22 260);
   --chart-2: oklch(0.65 0.18 350);
-  --chart-3: oklch(0.7 0.19 140); /* Emerald */
-  --chart-4: oklch(0.85 0.15 80);  /* Amber */
-  --chart-5: oklch(0.6 0.25 300); /* Purple */
+  --chart-3: oklch(0.7 0.19 140);
+  /* Emerald */
+  --chart-4: oklch(0.85 0.15 80);
+  /* Amber */
+  --chart-5: oklch(0.6 0.25 300);
+  /* Purple */
   --sidebar: oklch(0.98 0.01 285);
   --sidebar-foreground: oklch(0.2 0.04 285);
   --sidebar-primary: oklch(0.55 0.22 260);
@@ -116,6 +121,7 @@
   * {
     @apply border-border outline-ring/50;
   }
+
   body {
     @apply bg-background text-foreground;
   }
@@ -127,16 +133,19 @@
     opacity: 0;
     transform: translateX(12px);
   }
+
   to {
     opacity: 1;
     transform: translateX(0);
   }
 }
+
 @keyframes toast-out {
   from {
     opacity: 1;
     transform: translateX(0);
   }
+
   to {
     opacity: 0;
     transform: translateX(12px);
@@ -146,6 +155,7 @@
 .toast-in {
   animation: toast-in 260ms cubic-bezier(0.2, 0.9, 0.2, 1) both;
 }
+
 .toast-out {
   animation: toast-out 260ms cubic-bezier(0.2, 0.9, 0.2, 1) both;
 }

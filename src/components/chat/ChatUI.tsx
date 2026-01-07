@@ -93,6 +93,14 @@ const ChatUI = memo(function ChatUI({
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [selectedOfferForReview, setSelectedOfferForReview] = useState<JobOffer | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [mobileView, setMobileView] = useState<'list' | 'chat' | 'info'>('list');
+
+  // Set initial view on mobile if activeId exists
+  useEffect(() => {
+    if (activeId && window.innerWidth < 768) {
+      setMobileView('chat');
+    }
+  }, [activeId]);
 
   // Track previous offer statuses to trigger toasts
   const prevOffersStatusRef = useRef<Record<string, string>>({});
@@ -252,9 +260,12 @@ const ChatUI = memo(function ChatUI({
   }
 
   return (
-    <div className="flex h-full bg-white">
+    <div className="flex h-[calc(100vh-64px)] flex-col md:flex-row bg-white overflow-hidden">
       {/* Sidebar - Conversation List */}
-      <div className="w-96 border-r border-gray-200 flex flex-col bg-white">
+      <div className={`
+        ${mobileView === 'list' ? 'flex' : 'hidden md:flex'}
+        w-full md:w-96 md:border-r border-gray-200 flex flex-col bg-white h-full shrink-0
+      `}>
         {/* Sidebar Header */}
         <div className="p-4 border-b border-gray-200 flex items-center justify-between">
           <h1 className="text-2xl font-bold text-gray-800">Chats</h1>
@@ -326,7 +337,10 @@ const ChatUI = memo(function ChatUI({
       </div>
 
       {/* Chat Area */}
-      <div className="flex-1 flex bg-gray-50 overflow-hidden">
+      <div className={`
+        ${mobileView !== 'list' ? 'flex' : 'hidden md:flex'}
+        flex-1 flex bg-gray-50 overflow-hidden relative h-full
+      `}>
         {activeId && activeConv ? (
           <>
             <div className="flex-1 flex flex-col min-w-0">
@@ -335,6 +349,9 @@ const ChatUI = memo(function ChatUI({
                 otherUser={otherUser ?? null}
                 wsConnected={wsConnected}
                 onSearch={setSearchQuery}
+                onBack={() => setMobileView('list')}
+                onToggleInfo={() => setMobileView(mobileView === 'info' ? 'chat' : 'info')}
+                showInfoButton={offers.length > 0}
               />
 
               {/* Messages Area */}
@@ -637,23 +654,37 @@ const ChatUI = memo(function ChatUI({
 
             {/* Order Status Sidebar */}
             {offers.length > 0 && (
-              <OrderStatusSidebar
-                offers={offers}
-                isLoading={false}
-                isFreelancer={isSeller}
-                onEdit={(offer) => setEditOffer(offer)}
-                onViewResult={() => {
-                  const deliveryOffer = offers.find(o => o.status === 'delivered' || o.status === 'completed');
-                  if (deliveryOffer) {
-                    setSelectedOfferForResult(deliveryOffer);
-                    setShowViewResultModal(true);
-                  }
-                }}
-                onCancel={(offer) => {
-                  setSelectedOfferForCancel(offer);
-                  setShowCancelOrderModal(true);
-                }}
-              />
+              <div className={`
+                ${mobileView === 'info' ? 'flex fixed inset-0 z-50' : 'hidden md:flex'}
+                md:relative w-full md:w-80 h-full border-l bg-white flex-col shrink-0
+              `}>
+                {/* Mobile Info Header */}
+                <div className="md:hidden flex items-center justify-between p-4 border-b">
+                  <h1 className="font-bold">Status Pesanan</h1>
+                  <button onClick={() => setMobileView('chat')} className="p-2 hover:bg-gray-100 rounded-full">
+                    <XCircle className="w-6 h-6 text-gray-400" />
+                  </button>
+                </div>
+
+                <OrderStatusSidebar
+                  offers={offers}
+                  isLoading={false}
+                  isFreelancer={isSeller}
+                  onEdit={(offer) => setEditOffer(offer)}
+                  onViewResult={() => {
+                    const deliveryOffer = offers.find(o => o.status === 'delivered' || o.status === 'completed');
+                    if (deliveryOffer) {
+                      setSelectedOfferForResult(deliveryOffer);
+                      setShowViewResultModal(true);
+                      if (window.innerWidth < 768) setMobileView('chat');
+                    }
+                  }}
+                  onCancel={(offer) => {
+                    setSelectedOfferForCancel(offer);
+                    setShowCancelOrderModal(true);
+                  }}
+                />
+              </div>
             )}
 
             {/* View Offer Modal */}

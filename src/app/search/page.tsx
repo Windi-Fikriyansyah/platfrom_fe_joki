@@ -1,7 +1,36 @@
-
+import type { Metadata } from "next";
 import GigCard from "@/components/GigCard";
 import FiltersClient from "./FiltersClient";
 import Pagination from "@/components/Pagination";
+
+export async function generateMetadata({
+  searchParams,
+}: {
+  searchParams: Promise<SearchParams>;
+}): Promise<Metadata> {
+  const params = await searchParams;
+  const q = params.q;
+  const cat = params.cat;
+
+  let title = "Cari Layanan Mahasiswa";
+  let description = "Temukan layanan pendampingan skripsi, olah data, dan bimbingan akademik terbaik.";
+
+  if (q && cat) {
+    title = `Cari "${q}" dalam Kategori ${cat}`;
+    description = `Hasil pencarian untuk "${q}" dalam kategori ${cat} di jokiaja.com. Temukan mentor ahli sekarang.`;
+  } else if (q) {
+    title = `Hasil Cari "${q}"`;
+    description = `Menampilkan berbagai layanan terkait "${q}" di jokiaja.com. Tuntas bareng mentor ahli.`;
+  } else if (cat) {
+    title = `Kategori ${cat}`;
+    description = `Jelajahi berbagai layanan pendampingan mahasiswa dalam kategori ${cat} di jokiaja.com.`;
+  }
+
+  return {
+    title: `${title} — jokiaja.com`,
+    description,
+  };
+}
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL!; // contoh: http://127.0.0.1:8080/api
 
@@ -117,8 +146,8 @@ export default async function SearchPage({
             </div>
           ) : (
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {gigs.map((g) => (
-                <GigCard key={g.id} gig={g} />
+              {gigs.map((g, index) => (
+                <GigCard key={g.id} gig={{ ...g, priority: index < 6 }} />
               ))}
             </div>
           )}

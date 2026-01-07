@@ -142,10 +142,10 @@ export default function RegisterPage() {
         <div className="flex flex-col items-center text-center">
           <div className="inline-flex items-center gap-3 mb-4">
             <span className="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-black text-white text-sm font-bold">
-              SM
+              JA
             </span>
             <span className="text-lg sm:text-xl font-extrabold">
-              SkripsiMate
+              jokiaja.com
             </span>
           </div>
 

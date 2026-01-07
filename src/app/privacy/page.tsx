@@ -22,7 +22,7 @@ export default function PrivacyPage() {
         {
             icon: <Globe className="w-6 h-6 text-chart-5" />,
             title: "Berbagi Informasi",
-            text: "SkripsiMate tidak pernah menjual data pribadi Anda kepada pihak ketiga. Data hanya dibagikan kepada penyedia layanan pembayaran resmi kami.",
+            text: "jokiaja.com tidak pernah menjual data pribadi Anda kepada pihak ketiga. Data hanya dibagikan kepada penyedia layanan pembayaran resmi kami.",
         },
     ];
 
@@ -42,7 +42,7 @@ export default function PrivacyPage() {
                         Kebijakan <span className="bg-gradient-to-r from-chart-3 to-primary bg-clip-text text-transparent">Privasi</span>
                     </h1>
                     <p className="text-xl text-foreground/60 max-w-2xl mx-auto font-medium">
-                        Komitmen kami untuk melindungi data pribadi dan transparansi dalam setiap informasi yang Anda bagikan di SkripsiMate.
+                        Komitmen kami untuk melindungi data pribadi dan transparansi dalam setiap informasi yang Anda bagikan di jokiaja.com.
                     </p>
                 </div>
             </section>

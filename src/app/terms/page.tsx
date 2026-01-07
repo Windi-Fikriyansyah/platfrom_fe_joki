@@ -6,12 +6,12 @@ export default function TermsPage() {
     const sections = [
         {
             title: "1. Penerimaan Ketentuan",
-            content: "Dengan mengakses dan menggunakan platform SkripsiMate, Anda setuju untuk terikat oleh Syarat dan Ketentuan ini. Jika Anda tidak setuju, harap jangan gunakan layanan kami.",
+            content: "Dengan mengakses dan menggunakan platform jokiaja.com, Anda setuju untuk terikat oleh Syarat dan Ketentuan ini. Jika Anda tidak setuju, harap jangan gunakan layanan kami.",
             icon: <FileText className="w-5 h-5" />,
         },
         {
             title: "2. Layanan Pendampingan",
-            content: "SkripsiMate adalah platform yang menghubungkan mahasiswa dengan mentor untuk pendampingan skripsi. Kami hanya memfasilitasi bimbingan, revisi, and konsultasi. Kami melarang keras jasa pembuatan skripsi secara utuh (joki) yang melanggar etik akademik.",
+            content: "jokiaja.com adalah platform yang menghubungkan mahasiswa dengan mentor untuk pendampingan skripsi. Kami hanya memfasilitasi bimbingan, revisi, and konsultasi. Kami melarang keras jasa pembuatan skripsi secara utuh (joki) yang melanggar etik akademik.",
             icon: <AlertCircle className="w-5 h-5" />,
         },
         {
@@ -21,7 +21,7 @@ export default function TermsPage() {
         },
         {
             title: "4. Pembayaran & Biaya Jasa",
-            content: "Pembayaran dilakukan melalui sistem escrow SkripsiMate. Dana akan ditahan hingga pekerjaan diselesaikan dan disetujui oleh pengguna. Biaya layanan akan dipotong dari nilai transaksi sesuai kebijakan yang berlaku.",
+            content: "Pembayaran dilakukan melalui sistem escrow jokiaja.com. Dana akan ditahan hingga pekerjaan diselesaikan dan disetujui oleh pengguna. Biaya layanan akan dipotong dari nilai transaksi sesuai kebijakan yang berlaku.",
             icon: <Scale className="w-5 h-5" />,
         },
     ];
@@ -48,7 +48,7 @@ export default function TermsPage() {
                 <div className="bg-white rounded-[2.5rem] border border-primary/5 p-8 sm:p-12 shadow-2xl shadow-primary/5">
                     <div className="prose prose-blue max-w-none">
                         <p className="text-lg text-foreground/70 mb-12 italic border-l-4 border-secondary pl-6">
-                            "Bacalah Syarat dan Ketentuan ini dengan seksama sebelum menggunakan layanan SkripsiMate."
+                            "Bacalah Syarat dan Ketentuan ini dengan seksama sebelum menggunakan layanan jokiaja.com."
                         </p>
 
                         <div className="space-y-12">

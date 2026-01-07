@@ -1,6 +1,8 @@
 import Link from "next/link";
 import GigCard from "@/components/GigCard";
 import FreelancerCard from "@/components/FreelancerCard";
+import { Search, Rocket, Sparkles } from "lucide-react";
+import { Button } from "@/components/ui/Button";
 
 const API_BASE =
   process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3000/api";
@@ -65,13 +67,13 @@ export default async function HomePage() {
 
       <section className="mx-auto w-full max-w-7xl px-3 sm:px-4 md:px-6 lg:px-8 pt-6 sm:pt-8 md:pt-12 lg:pt-16 pb-8 md:pb-12 border-b border-primary/5">
         <div className="grid gap-8 sm:gap-12 lg:grid-cols-2 lg:items-center">
-          <div className="relative">
-            <div className="inline-flex items-center gap-2 rounded-full border border-primary/10 bg-white/50 backdrop-blur-sm px-4 py-1.5 text-xs font-bold text-primary shadow-sm hover:scale-105 transition-transform cursor-default">
+          <div className="relative flex flex-col items-center lg:items-start">
+            <div className="inline-flex items-center gap-2 rounded-full border border-primary/10 bg-white/50 backdrop-blur-sm px-4 py-1.5 text-xs font-bold text-primary shadow-sm hover:scale-105 transition-transform cursor-default mb-2">
               <span className="flex h-2 w-2 rounded-full bg-primary animate-ping" />
               🎓 Mahasiswa • Konsultasi • Semua lewat chat
             </div>
 
-            <h1 className="mt-4 sm:mt-6 text-3xl sm:text-4xl md:text-5xl lg:text-6xl leading-tight font-black tracking-tight">
+            <h1 className="mt-4 sm:mt-6 text-2xl sm:text-4xl md:text-5xl lg:text-6xl leading-tight font-black tracking-tight text-center lg:text-left">
               Bereskan skripsi lebih{" "}
               <span className="bg-gradient-to-r from-primary via-secondary to-primary bg-clip-text text-transparent">
                 terarah & tenang
@@ -79,28 +81,33 @@ export default async function HomePage() {
               .
             </h1>
 
-            <p className="mt-4 sm:mt-5 text-sm sm:text-base md:text-lg text-foreground/70 max-w-xl leading-relaxed">
+            <p className="mt-4 sm:mt-5 text-sm sm:text-base md:text-lg text-foreground/70 max-w-xl leading-relaxed text-center lg:text-left mx-auto lg:mx-0">
               Metodologi, olah data (dibimbing), revisi sesuai catatan dosen,
               proofreading, sitasi, dan PPT sidang. <span className="text-secondary font-semibold">Tuntas bareng mentor ahli.</span>
             </p>
 
-            <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <Link
+            <div className="mt-10 flex flex-col sm:flex-row gap-4 w-full max-w-lg mx-auto lg:mx-0 lg:max-w-none">
+              <Button
                 href="/search"
-                className="group relative h-12 flex items-center justify-center rounded-2xl bg-primary text-sm font-bold text-white shadow-xl shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all overflow-hidden"
+                variant="premium"
+                full
+                className="h-14 sm:h-16 text-base sm:text-lg group"
               >
-                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
+                <Search className="w-5 h-5 sm:w-6 sm:h-6" />
                 Cari Layanan Impian
-              </Link>
-              <Link
+              </Button>
+              <Button
                 href="/dashboard"
-                className="h-12 flex items-center justify-center rounded-2xl border border-primary/20 bg-white px-6 text-sm font-bold text-primary hover:bg-primary/5 shadow-sm active:scale-95 transition-all"
+                variant="secondary"
+                full
+                className="h-14 sm:h-16 text-base sm:text-lg"
               >
+                <Rocket className="w-5 h-5 sm:w-6 sm:h-6 text-secondary" />
                 Jadi Mentor Sekarang
-              </Link>
+              </Button>
             </div>
 
-            <div className="mt-8 flex flex-wrap gap-2.5">
+            <div className="mt-8 flex flex-wrap gap-2.5 justify-center lg:justify-start">
               {categories.slice(0, 7).map((c) => (
                 <Link
                   key={c}
@@ -123,47 +130,19 @@ export default async function HomePage() {
             <div className="absolute -inset-1 bg-gradient-to-r from-primary to-secondary rounded-[2.5rem] blur opacity-25 group-hover:opacity-40 transition duration-1000 group-hover:duration-200"></div>
             <div className="relative rounded-2xl sm:rounded-3xl border border-white/50 bg-white/80 backdrop-blur-md p-4 sm:p-5 md:p-6 shadow-2xl">
               <div className="grid gap-4">
-                <div className="rounded-xl sm:rounded-2xl bg-gradient-to-br from-primary to-primary/80 p-5 sm:p-6 text-white shadow-lg shadow-primary/30">
-                  <div className="text-xs sm:text-sm font-bold text-white/70 uppercase tracking-wider">
-                    Sesi berjalan
-                  </div>
-                  <div className="mt-1 text-xl sm:text-2xl font-black">
-                    Olah Data (Bimbingan)
-                  </div>
-                  <div className="mt-4 flex items-center justify-between text-sm">
-                    <span className="text-white/80 font-medium">Status</span>
-                    <span className="rounded-full bg-white/20 backdrop-blur-sm px-4 py-1 font-bold animate-pulse">
-                      In Progress
-                    </span>
+                <div className="relative overflow-hidden rounded-xl sm:rounded-2xl bg-gray-100 shadow-lg shadow-primary/10 min-h-[250px] sm:min-h-[400px] group/card">
+                  <img
+                    src="/thesis_mentoring_banner_1767773830848.png"
+                    alt="Bimbingan Olah Data"
+                    className="absolute inset-0 w-full h-full object-cover group-hover/card:scale-105 transition-transform duration-700"
+                  />
+                  {/* Subtle glass effect label */}
+                  <div className="absolute top-4 left-4 rounded-full bg-white/70 backdrop-blur-md px-3 py-1.5 text-[10px] font-black text-primary uppercase tracking-widest shadow-sm">
+                    Live Session
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                  {[
-                    { k: "Mentor", v: "1.2K+", c: "text-primary" },
-                    { k: "Layanan", v: "6.4K+", c: "text-secondary" },
-                    { k: "Rating", v: "4.8", c: "text-chart-3" },
-                  ].map((x) => (
-                    <div
-                      key={x.k}
-                      className="rounded-2xl border border-primary/5 bg-white p-4 hover:shadow-md transition-shadow"
-                    >
-                      <div className="text-[10px] sm:text-xs font-bold text-foreground/40 uppercase tracking-widest">
-                        {x.k}
-                      </div>
-                      <div className={`mt-1 text-lg sm:text-xl font-black ${x.c}`}>
-                        {x.v}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                <Link
-                  href="/chat/1"
-                  className="h-12 rounded-xl bg-foreground text-center text-xs sm:text-sm font-bold text-white leading-[48px] hover:scale-[1.02] active:scale-95 transition-all shadow-lg"
-                >
-                  Lihat Contoh Chat Interaktif
-                </Link>
+                {/* Stats and Button removed as requested */}
               </div>
             </div>
           </div>
@@ -180,18 +159,21 @@ export default async function HomePage() {
               Pendampingan yang paling sering dipakai mahasiswa di seluruh Indonesia.
             </p>
           </div>
-          <Link
+          <Button
             href="/search"
-            className="group flex items-center gap-2 rounded-xl border border-primary/10 bg-white px-5 py-2.5 text-sm font-bold text-primary hover:bg-primary hover:text-white transition-all shadow-sm"
+            variant="outline"
+            className="w-full sm:w-auto group border-primary/10 text-primary hover:border-primary/20"
           >
             Lihat semua
             <span className="group-hover:translate-x-1 transition-transform">→</span>
-          </Link>
+          </Button>
         </div>
 
         <div className="mt-8 sm:mt-12 grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
           {gigs && gigs.length > 0 ? (
-            gigs.map((g: any) => <GigCard key={g.id} gig={g} />)
+            gigs.map((g: any, index: number) => (
+              <GigCard key={g.id} gig={{ ...g, priority: index < 4 }} />
+            ))
           ) : (
             <div className="col-span-full text-center py-20 rounded-3xl border-2 border-dashed border-primary/10 bg-primary/5">
               <p className="text-foreground/40 font-bold">
@@ -215,12 +197,13 @@ export default async function HomePage() {
                 Bantu mahasiswa lain menyelesaikan skripsi mereka sambil menambah penghasilan. Daftar sebagai mentor sekarang juga.
               </p>
             </div>
-            <Link
+            <Button
               href="/search"
-              className="rounded-2xl bg-primary px-8 py-4 text-sm sm:text-base font-black text-white text-center shadow-xl shadow-primary/20 hover:scale-105 active:scale-95 transition-all"
+              variant="premium"
+              className="w-full sm:w-auto h-14 px-10 text-base"
             >
               Cari Mentor Ahli
-            </Link>
+            </Button>
           </div>
 
           <div className="mt-12 grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4"></div>

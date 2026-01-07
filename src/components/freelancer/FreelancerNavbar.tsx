@@ -117,7 +117,7 @@ export default function FreelancerNavbar({
           if (role !== "freelancer") {
             toastRef.current?.(
               "Akses ditolak. Halaman ini khusus freelancer.",
-              "error"
+              "danger"
             );
             router.replace("/");
             return;
@@ -172,7 +172,7 @@ export default function FreelancerNavbar({
         method: "POST",
         credentials: "include",
       });
-    } catch {}
+    } catch { }
 
     setIsLoggedIn(false);
     setUserName("");
@@ -188,7 +188,7 @@ export default function FreelancerNavbar({
       <div className="px-4 py-4 border-b">
         <Link href="/freelancer/dashboard" className="flex items-center gap-3">
           <span className="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-black text-white text-xs font-bold">
-            SM
+            JA
           </span>
           <div className="min-w-0">
             <div className="text-sm font-extrabold leading-tight truncate">

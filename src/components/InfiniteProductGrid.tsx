@@ -91,7 +91,7 @@ export default function InfiniteProductGrid({ initialGigs, meta, searchParams }:
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {gigs.map((g, i) => (
                     // Use index in key to avoid duplicate key issues if API returns duplicates
-                    <GigCard key={`${g.id}-${i}`} gig={g} />
+                    <GigCard key={`${g.id}-${i}`} gig={{ ...g, priority: i < 6 }} />
                 ))}
             </div>
 

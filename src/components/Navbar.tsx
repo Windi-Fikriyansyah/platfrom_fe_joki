@@ -19,6 +19,7 @@ import {
   ChevronDown,
   Settings,
   Store,
+  Search,
 } from "lucide-react";
 
 export default function Navbar() {
@@ -132,6 +133,13 @@ export default function Navbar() {
     return () => document.removeEventListener("mousedown", onClickOutside);
   }, [accountOpen]);
 
+  // Handle mobile menu toggle from BottomNav
+  useEffect(() => {
+    const handleToggle = () => setOpen((prev) => !prev);
+    window.addEventListener("toggle-mobile-menu", handleToggle);
+    return () => window.removeEventListener("toggle-mobile-menu", handleToggle);
+  }, []);
+
   async function handleLogout() {
     try {
       await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/auth/logout`, {
@@ -146,7 +154,7 @@ export default function Navbar() {
     setOpen(false);
 
     showToast("Berhasil keluar", "success");
-    router.push("/");
+    window.location.href = "/";
   }
 
   if (!mounted) {
@@ -166,10 +174,10 @@ export default function Navbar() {
             className="flex items-center gap-2 font-extrabold text-base sm:text-lg group"
           >
             <span className="inline-flex h-8 sm:h-9 w-8 sm:w-9 items-center justify-center rounded-lg sm:rounded-xl bg-gradient-to-br from-primary to-secondary text-white text-xs sm:text-sm font-bold shadow-lg shadow-primary/20 group-hover:scale-110 transition-transform">
-              SM
+              JA
             </span>
             <span className="bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-              SkripsiMate
+              jokiaja.com
             </span>
           </Link>
 
@@ -199,12 +207,12 @@ export default function Navbar() {
 
           {/* Desktop nav */}
           <nav className="hidden md:flex items-center gap-1 lg:gap-2 shrink-0">
-            <Link
-              href="/dashboard"
-              className="rounded-lg lg:rounded-xl px-2 lg:px-3 py-1.5 lg:py-2 text-xs lg:text-sm font-semibold hover:bg-primary/5 hover:text-primary transition-colors"
+            <button
+              onClick={() => showToast("Fitur ini akan segera hadir", "info")}
+              className="rounded-lg lg:rounded-xl px-2 lg:px-3 py-1.5 lg:py-2 text-xs lg:text-sm font-semibold hover:bg-primary/5 hover:text-primary transition-colors text-left"
             >
               Jobboard
-            </Link>
+            </button>
             <Link
               href="/search"
               className="rounded-lg lg:rounded-xl px-2 lg:px-3 py-1.5 lg:py-2 text-xs lg:text-sm font-semibold hover:bg-primary/5 hover:text-primary transition-colors"
@@ -227,12 +235,6 @@ export default function Navbar() {
               )}
             </Link>
 
-            <Link
-              href="/notifications"
-              className="relative flex items-center justify-center w-9 h-9 rounded-full hover:bg-primary/5 hover:text-primary transition-colors"
-            >
-              <Bell className="w-5 h-5" strokeWidth={2} />
-            </Link>
 
             {userRole === "client" && (
               <button
@@ -298,14 +300,16 @@ export default function Navbar() {
                         </Link>
                       )}
 
-                      <Link
-                        href="/dashboard"
-                        onClick={() => setAccountOpen(false)}
-                        className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold hover:bg-primary/5 hover:text-primary transition-colors"
-                      >
-                        <Settings className="w-5 h-5 text-primary/70" />
-                        <span>Pengaturan</span>
-                      </Link>
+                      {userRole === "freelancer" && (
+                        <Link
+                          href="/freelancer/settings"
+                          onClick={() => setAccountOpen(false)}
+                          className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold hover:bg-primary/5 hover:text-primary transition-colors"
+                        >
+                          <Settings className="w-5 h-5 text-primary/70" />
+                          <span>Pengaturan</span>
+                        </Link>
+                      )}
 
                       <Link
                         href="/chat"
@@ -323,23 +327,17 @@ export default function Navbar() {
                         <span>Kotak Pesan dan Order</span>
                       </Link>
 
-                      <Link
-                        href="/notifications"
-                        onClick={() => setAccountOpen(false)}
-                        className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold hover:bg-primary/5 hover:text-primary transition-colors"
-                      >
-                        <Bell className="w-5 h-5 text-primary/70" />
-                        <span>Notifikasi</span>
-                      </Link>
 
-                      <Link
-                        href="/profile"
-                        onClick={() => setAccountOpen(false)}
-                        className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold hover:bg-primary/5 hover:text-primary transition-colors"
-                      >
-                        <User className="w-5 h-5 text-primary/70" />
-                        <span>Profil Saya</span>
-                      </Link>
+                      {userRole === "client" && (
+                        <Link
+                          href="/profile"
+                          onClick={() => setAccountOpen(false)}
+                          className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold hover:bg-primary/5 hover:text-primary transition-colors"
+                        >
+                          <User className="w-5 h-5 text-primary/70" />
+                          <span>Profil Saya</span>
+                        </Link>
+                      )}
 
                       {userRole === "client" && (
                         <button
@@ -408,7 +406,7 @@ export default function Navbar() {
               <Input
                 name="qMobile"
                 placeholder="Cari layanan…"
-                className="pr-20 text-xs border-primary/10 focus:border-primary/40 focus:ring-primary/20 rounded-xl"
+                className="pr-20 text-sm border-primary/10 focus:border-primary/40 focus:ring-primary/20 rounded-xl"
               />
               <button
                 type="submit"
@@ -426,13 +424,24 @@ export default function Navbar() {
             <div className="rounded-2xl border border-primary/10 bg-white p-3 shadow-xl">
               <div className="grid grid-cols-1 gap-2">
                 <Link
-                  href="/dashboard"
+                  href="/search"
                   onClick={() => setOpen(false)}
-                  className="h-11 rounded-xl border border-primary/5 px-3 text-sm font-semibold hover:bg-primary/5 hover:text-primary flex items-center gap-3 transition-colors"
+                  className="w-full h-11 rounded-xl border border-primary/5 px-3 text-sm font-semibold hover:bg-primary/5 hover:text-primary flex items-center gap-3 transition-colors text-left"
+                >
+                  <Search className="w-5 h-5 text-primary/70" />
+                  Layanan
+                </Link>
+
+                <button
+                  onClick={() => {
+                    setOpen(false);
+                    showToast("Fitur ini akan segera hadir", "info");
+                  }}
+                  className="w-full h-11 rounded-xl border border-primary/5 px-3 text-sm font-semibold hover:bg-primary/5 hover:text-primary flex items-center gap-3 transition-colors text-left"
                 >
                   <LayoutDashboard className="w-5 h-5 text-primary/70" />
-                  Dashboard
-                </Link>
+                  Jobboard
+                </button>
 
                 <Link
                   href="/chat"
@@ -450,14 +459,38 @@ export default function Navbar() {
                   Chat
                 </Link>
 
-                <Link
-                  href="/notifications"
-                  onClick={() => setOpen(false)}
-                  className="h-11 rounded-xl border border-primary/5 px-3 text-sm font-semibold hover:bg-primary/5 hover:text-primary flex items-center gap-3 transition-colors"
-                >
-                  <Bell className="w-5 h-5 text-primary/70" />
-                  Notifikasi
-                </Link>
+                {isLoggedIn && userRole === "freelancer" && (
+                  <>
+                    <Link
+                      href="/freelancer/dashboard"
+                      onClick={() => setOpen(false)}
+                      className="h-11 rounded-xl border border-primary/5 px-3 text-sm font-semibold hover:bg-primary/5 hover:text-primary flex items-center gap-3 transition-colors"
+                    >
+                      <LayoutDashboard className="w-5 h-5 text-primary/70" />
+                      Dashboard Freelancer
+                    </Link>
+                    <Link
+                      href="/freelancer/settings"
+                      onClick={() => setOpen(false)}
+                      className="h-11 rounded-xl border border-primary/5 px-3 text-sm font-semibold hover:bg-primary/5 hover:text-primary flex items-center gap-3 transition-colors"
+                    >
+                      <Settings className="w-5 h-5 text-primary/70" />
+                      Pengaturan
+                    </Link>
+                  </>
+                )}
+
+                {isLoggedIn && userRole === "client" && (
+                  <Link
+                    href="/profile"
+                    onClick={() => setOpen(false)}
+                    className="h-11 rounded-xl border border-primary/5 px-3 text-sm font-semibold hover:bg-primary/5 hover:text-primary flex items-center gap-3 transition-colors"
+                  >
+                    <User className="w-5 h-5 text-primary/70" />
+                    Profil Saya
+                  </Link>
+                )}
+
 
                 {!authLoading && userRole === "client" && (
                   <button

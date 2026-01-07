@@ -3,6 +3,7 @@ import "./globals.css";
 import ConditionalNavbar from "@/components/ConditionalNavbar";
 import AuthGuard from "@/components/AuthGuard";
 import ConditionalFooter from "@/components/ConditionalFooter";
+import ConditionalBottomNav from "@/components/ConditionalBottomNav";
 import ToastProvider from "@/components/ToastProvider";
 
 export const viewport: Viewport = {
@@ -11,9 +12,9 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: "SkripsiMate — Mentoring & Layanan Mahasiswa",
+  title: "jokiaja.com — Mentoring & Layanan Mahasiswa",
   description:
-    "Platform layanan mahasiswa (pendampingan skripsi, olah data dibimbing, proofreading, PPT sidang).",
+    "Platform joki & layanan mahasiswa (pendampingan skripsi, olah data dibimbing, proofreading, PPT sidang).",
 };
 
 export default function RootLayout({
@@ -26,10 +27,11 @@ export default function RootLayout({
       <body className="min-h-screen bg-[#fafafa] text-black antialiased overflow-x-hidden">
         <ToastProvider>
           <ConditionalNavbar />
-          <main className="min-h-[calc(100vh-64px)]">
+          <main className="min-h-[calc(100vh-64px)] pb-16 md:pb-0">
             <AuthGuard>{children}</AuthGuard>
           </main>
           <ConditionalFooter />
+          <ConditionalBottomNav />
         </ToastProvider>
       </body>
     </html>

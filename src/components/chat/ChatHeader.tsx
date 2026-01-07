@@ -1,19 +1,25 @@
 import { memo, useState } from "react";
 import { User } from "./types";
 import { getDisplayName, getAvatarInitial } from "./utils";
-import { MoreVertical, Phone, Search, X } from "lucide-react";
+import { ChevronLeft, Info, MoreVertical, Phone, Search, X } from "lucide-react";
 import { getMediaUrl } from "@/lib/api";
 
 interface ChatHeaderProps {
   otherUser: User | null;
   wsConnected: boolean;
   onSearch: (query: string) => void;
+  onBack?: () => void;
+  onToggleInfo?: () => void;
+  showInfoButton?: boolean;
 }
 
 const ChatHeader = memo(function ChatHeader({
   otherUser,
   wsConnected,
   onSearch,
+  onBack,
+  onToggleInfo,
+  showInfoButton,
 }: ChatHeaderProps) {
   const [isSearching, setIsSearching] = useState(false);
   const [query, setQuery] = useState("");
@@ -37,8 +43,18 @@ const ChatHeader = memo(function ChatHeader({
   };
 
   return (
-    <div className="bg-white border-b border-gray-200 px-6 py-3 flex items-center justify-between shadow-sm z-10 sticky top-0 h-[72px]">
-      <div className={`flex items-center gap-4 transition-opacity duration-200 ${isSearching ? 'opacity-0 pointer-events-none w-0' : 'opacity-100'}`}>
+    <div className="bg-white border-b border-gray-200 px-4 md:px-6 py-3 flex items-center justify-between shadow-sm z-10 sticky top-0 h-[72px]">
+      <div className={`flex items-center gap-2 md:gap-4 transition-opacity duration-200 ${isSearching ? 'opacity-0 pointer-events-none w-0' : 'opacity-100'}`}>
+        {/* Back Button (Mobile Only) */}
+        {onBack && (
+          <button
+            onClick={onBack}
+            className="md:hidden p-2 -ml-2 hover:bg-gray-100 rounded-full text-gray-400"
+          >
+            <ChevronLeft className="w-6 h-6" />
+          </button>
+        )}
+
         {/* Profile Info */}
         <div className="relative group shrink-0">
           {photoUrl ? (
@@ -98,8 +114,16 @@ const ChatHeader = memo(function ChatHeader({
         >
           {isSearching ? <X className="w-5 h-5" /> : <Search className="w-5 h-5" />}
         </button>
+        {showInfoButton && onToggleInfo && (
+          <button
+            onClick={onToggleInfo}
+            className="md:hidden p-2.5 text-blue-600 bg-blue-50 rounded-full transition-all active:scale-95"
+          >
+            <Info className="w-5 h-5" />
+          </button>
+        )}
         {!isSearching && (
-          <button className="p-2.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-all active:scale-95">
+          <button className="hidden md:block p-2.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-all active:scale-95">
             <MoreVertical className="w-5 h-5" />
           </button>
         )}

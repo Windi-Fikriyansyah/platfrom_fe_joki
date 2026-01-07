@@ -16,9 +16,9 @@ export default function ForgotPasswordPage() {
         <div className="mb-6 sm:mb-8 text-center">
           <Link href="/" className="inline-flex items-center gap-2 mb-4">
             <span className="inline-flex h-8 sm:h-10 w-8 sm:w-10 items-center justify-center rounded-lg sm:rounded-xl bg-black text-white text-xs sm:text-sm font-bold">
-              SM
+              JA
             </span>
-            <span className="text-lg sm:text-xl font-extrabold">SkripsiMate</span>
+            <span className="text-lg sm:text-xl font-extrabold">jokiaja.com</span>
           </Link>
           <h1 className="text-2xl sm:text-3xl font-extrabold">Lupa Password?</h1>
           <p className="mt-2 text-xs sm:text-sm text-black/60">

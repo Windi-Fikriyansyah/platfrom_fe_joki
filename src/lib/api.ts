@@ -1,4 +1,4 @@
-export const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL!;
+export const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8080/api";
 export const MEDIA_BASE = API_BASE.replace(/\/api$/, "");
 
 export function getMediaUrl(path: string | undefined): string {

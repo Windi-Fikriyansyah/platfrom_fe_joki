@@ -12,6 +12,7 @@ export default function GigCard({ gig }: { gig: any }) {
           <LazyImage
             src={gig.cover}
             alt={gig.title}
+            priority={gig.priority}
             className="h-full w-full object-cover transition group-hover:scale-105"
           />
         ) : (

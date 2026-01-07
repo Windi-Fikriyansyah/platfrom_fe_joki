@@ -8,15 +8,15 @@ export default function Footer() {
           <div className="space-y-4">
             <div className="flex items-center gap-2 font-black text-xl tracking-tight">
               <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-secondary text-white text-xs font-bold">
-                SM
+                JA
               </span>
               <span className="bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-                SkripsiMate
+                jokiaja.com
               </span>
             </div>
             <p className="text-sm text-foreground/60 leading-relaxed">
-              Platform pendampingan skripsi nomor #1 di Indonesia.
-              Cari mentor terbaik, bimbingan intensif, and bereskan skripsi tanpa drama.
+              Platform layanan joki skripsi nomor #1 di Indonesia.
+              Cari mentor terbaik, bimbingan intensif, dan bereskan skripsi tanpa drama.
             </p>
           </div>
 
@@ -58,7 +58,7 @@ export default function Footer() {
 
         <div className="mt-16 pt-8 border-t border-primary/10 flex flex-col gap-4 md:flex-row md:items-center md:justify-between text-xs font-medium text-foreground/40">
           <div className="flex items-center gap-4">
-            <span>© {new Date().getFullYear()} SkripsiMate. Tuntas Bareng Expert.</span>
+            <span>© {new Date().getFullYear()} jokiaja.com. Tuntas Bareng Expert.</span>
           </div>
           <div className="flex items-center gap-6">
             <span className="hover:text-primary transition-colors cursor-default">Modern Interface</span>

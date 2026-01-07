@@ -1,14 +1,15 @@
-
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState } from "react";
+import Image from "next/image";
 import { getMediaUrl } from "@/lib/api";
 
-interface LazyImageProps extends React.ImgHTMLAttributes<HTMLImageElement> {
+interface LazyImageProps {
     src: string;
     alt: string;
     className?: string;
     fallbackSrc?: string;
+    priority?: boolean;
 }
 
 export default function LazyImage({
@@ -16,61 +17,39 @@ export default function LazyImage({
     alt,
     className = "",
     fallbackSrc = "https://via.placeholder.com/400x300?text=No+Image",
-    ...props
+    priority = false,
 }: LazyImageProps) {
     const [isLoaded, setIsLoaded] = useState(false);
     const [hasError, setHasError] = useState(false);
-    const [isVisible, setIsVisible] = useState(false);
-    const imgRef = useRef<HTMLDivElement>(null);
 
-    useEffect(() => {
-        const observer = new IntersectionObserver(
-            (entries) => {
-                if (entries[0].isIntersecting) {
-                    setIsVisible(true);
-                    observer.disconnect();
-                }
-            },
-            { threshold: 0.1, rootMargin: "50px" }
-        );
-
-        if (imgRef.current) {
-            observer.observe(imgRef.current);
-        }
-
-        return () => observer.disconnect();
-    }, []);
-
-    const handleLoad = () => {
-        setIsLoaded(true);
-    };
-
-    const handleError = () => {
-        setHasError(true);
-        setIsLoaded(true); // Stop skeleton
-    };
+    const finalSrc = hasError ? fallbackSrc : getMediaUrl(src) || fallbackSrc;
 
     return (
-        <div
-            ref={imgRef}
-            className={`relative overflow-hidden bg-gray-100 ${className}`}
-        >
-            {/* Skeleton / Placeholder */}
+        <div className={`relative overflow-hidden bg-gray-100 ${className}`}>
+            {/* Shimmer Effect / Skeleton */}
             {!isLoaded && (
-                <div className="absolute inset-0 animate-pulse bg-gray-200 z-10" />
+                <div className="absolute inset-0 z-10 overflow-hidden">
+                    <div
+                        className="absolute inset-0 bg-gradient-to-r from-gray-100 via-gray-200 to-gray-100 animate-shimmer"
+                        style={{ backgroundSize: '200% 100%' }}
+                    />
+                </div>
             )}
 
-            {isVisible && (
-                <img
-                    src={hasError ? fallbackSrc : getMediaUrl(src)}
-                    alt={alt}
-                    className={`h-full w-full object-cover transition-opacity duration-500 ${isLoaded ? "opacity-100" : "opacity-0"
-                        }`}
-                    onLoad={handleLoad}
-                    onError={handleError}
-                    {...props}
-                />
-            )}
+            <Image
+                src={finalSrc}
+                alt={alt}
+                fill
+                priority={priority}
+                className={`object-cover transition-all duration-700 ease-in-out ${isLoaded ? "opacity-100 scale-100 blur-0" : "opacity-0 scale-105 blur-lg"
+                    }`}
+                onLoad={() => setIsLoaded(true)}
+                onError={() => {
+                    setHasError(true);
+                    setIsLoaded(true);
+                }}
+                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+            />
         </div>
     );
 }

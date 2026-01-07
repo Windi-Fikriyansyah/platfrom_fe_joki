@@ -422,6 +422,33 @@ export default async function GigDetail(props: {
           </Link>
         </aside>
       </div>
+
+      {/* Mobile Sticky CTA */}
+      <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-primary/10 p-4 shadow-[0_-4px_20px_rgba(0,0,0,0.05)] animate-in slide-in-from-bottom duration-500">
+        <div className="flex items-center gap-3">
+          <div className="min-w-0 flex-1">
+            <p className="text-[10px] text-black/40 font-bold uppercase tracking-widest">Harga mulai</p>
+            <p className="text-lg font-black text-primary">Rp {Number(gig.base_price).toLocaleString("id-ID")}</p>
+          </div>
+          <div className="flex gap-2">
+            <Link
+              href={`/chat?seller_id=${gig.freelancer?.id}${gig.id ? `&product_id=${gig.id}` : ""}`}
+              className="h-11 px-4 flex items-center justify-center rounded-xl border border-primary/20 bg-white text-primary font-bold active:scale-95 transition-all"
+            >
+              💬
+            </Link>
+            <Link
+              href={`/chat?product_id=${gig.id}&seller_id=${gig.freelancer?.id}&package=basic`}
+              className="h-11 px-6 flex items-center justify-center rounded-xl bg-primary text-white font-bold shadow-lg shadow-primary/20 active:scale-95 transition-all"
+            >
+              Order Sekarang
+            </Link>
+          </div>
+        </div>
+      </div>
+
+      {/* Add bottom padding to prevent content being hidden by sticky bar */}
+      <div className="h-24 lg:hidden" />
     </div>
   );
 }
