@@ -59,6 +59,8 @@ const ChatUI = memo(function ChatUI({
     offers,
     createOffer,
     updateOffer,
+    isBuyer,
+    isSeller,
   } = useChat({
     initialMe,
     initialConversations,
@@ -397,7 +399,7 @@ const ChatUI = memo(function ChatUI({
               {/* Input Area */}
               <div className="bg-white border-t border-gray-200 p-4 relative">
                 {/* Freelancer Offer Button */}
-                {me?.role === "freelancer" && (
+                {isSeller && (
                   <div className="absolute -top-12 left-0 right-0 px-4 flex justify-center pointer-events-none">
                     {(() => {
                       const sortedOffers = [...offers].sort((a, b) =>
@@ -445,7 +447,7 @@ const ChatUI = memo(function ChatUI({
                 )}
 
                 {/* Client Pay Button */}
-                {me?.role === "client" && (
+                {isBuyer && (
                   <div className="absolute -top-12 left-0 right-0 px-4 flex justify-center pointer-events-none">
                     {(() => {
                       // Debugging logs
@@ -561,7 +563,7 @@ const ChatUI = memo(function ChatUI({
               <OrderStatusSidebar
                 offers={offers}
                 isLoading={false}
-                isFreelancer={me?.role === 'freelancer'}
+                isFreelancer={isSeller}
                 onEdit={(offer) => setEditOffer(offer)}
                 onViewResult={() => {
                   const deliveryOffer = offers.find(o => o.status === 'delivered' || o.status === 'completed');
@@ -582,7 +584,7 @@ const ChatUI = memo(function ChatUI({
               isOpen={!!viewOffer}
               onClose={() => setViewOffer(null)}
               offer={viewOffer}
-              isFreelancer={me?.role === 'freelancer'}
+              isFreelancer={isSeller}
             />
 
             {/* Payment Modal */}

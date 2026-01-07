@@ -103,8 +103,23 @@ export function useChat(initial?: {
 
   const otherUser = useMemo(() => {
     if (!me?.id || !activeConv) return null;
-    const isBuyer = String(me.id).toLowerCase() === String(activeConv.buyer_id).toLowerCase();
+    const isBuyer =
+      String(me.id).toLowerCase() === String(activeConv.buyer_id).toLowerCase();
     return isBuyer ? activeConv.seller : activeConv.buyer;
+  }, [me?.id, activeConv]);
+
+  const isBuyerInConv = useMemo(() => {
+    if (!me?.id || !activeConv) return false;
+    return (
+      String(me.id).toLowerCase() === String(activeConv.buyer_id).toLowerCase()
+    );
+  }, [me?.id, activeConv]);
+
+  const isSellerInConv = useMemo(() => {
+    if (!me?.id || !activeConv) return false;
+    return (
+      String(me.id).toLowerCase() === String(activeConv.seller_id).toLowerCase()
+    );
   }, [me?.id, activeConv]);
 
   // Load data
@@ -556,6 +571,8 @@ export function useChat(initial?: {
     sendMessage,
     createOffer,
     updateOffer,
+    isBuyer: isBuyerInConv,
+    isSeller: isSellerInConv,
     reloadConversations: loadConversations,
     isLoading,
     wsConnected,
