@@ -14,3 +14,12 @@ export function formatChatTime(dateString: string) {
     hour12: false,
   }).replace(":", ".");
 }
+
+export function formatDate(dateString: string | Date) {
+  if (!dateString) return "-";
+  return new Date(dateString).toLocaleDateString("id-ID", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+}

@@ -23,3 +23,25 @@ export async function apiFetch<T>(
 
   return res.json() as Promise<T>;
 }
+
+export const api = {
+  get: <T>(path: string, headers?: HeadersInit) =>
+    apiFetch<{ success: boolean; data: T }>(path, { method: "GET", headers }),
+  post: <T>(path: string, body?: any) =>
+    apiFetch<{ success: boolean; data: T }>(path, {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+  patch: <T>(path: string, body?: any) =>
+    apiFetch<{ success: boolean; data: T }>(path, {
+      method: "PATCH",
+      body: JSON.stringify(body),
+    }),
+  put: <T>(path: string, body?: any) =>
+    apiFetch<{ success: boolean; data: T }>(path, {
+      method: "PUT",
+      body: JSON.stringify(body),
+    }),
+  delete: <T>(path: string) =>
+    apiFetch<{ success: boolean; data: T }>(path, { method: "DELETE" }),
+};

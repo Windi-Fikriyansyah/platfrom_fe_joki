@@ -1,6 +1,7 @@
-// src/app/search/page.tsx
+
 import GigCard from "@/components/GigCard";
 import FiltersClient from "./FiltersClient";
+import Pagination from "@/components/Pagination";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL!; // contoh: http://127.0.0.1:8080/api
 
@@ -10,6 +11,7 @@ type SearchParams = {
   min?: string;
   max?: string;
   sort?: string; // latest | price_low | price_high
+  page?: string;
 };
 
 async function getData(params: SearchParams) {
@@ -19,6 +21,12 @@ async function getData(params: SearchParams) {
   if (params.cat?.trim()) qs.set("cat", params.cat);
   if (params.min?.trim()) qs.set("min", params.min);
   if (params.max?.trim()) qs.set("max", params.max);
+  if (params.sort?.trim()) qs.set("sort", params.sort);
+
+  // Pagination
+  const page = Number(params.page) || 1;
+  qs.set("page", page.toString());
+  qs.set("limit", "20");
 
   const [productRes, categoryRes] = await Promise.all([
     fetch(`${API_BASE}/products?${qs.toString()}`, { cache: "no-store" }),
@@ -35,13 +43,10 @@ async function getData(params: SearchParams) {
 
   let gigs = (productJson.data ?? []) as any[];
   const categories = (categoryJson.data ?? []) as string[];
+  const meta = productJson.meta || { total_pages: 1, page: 1 };
 
-  // SORT (karena backend kamu sekarang selalu created_at DESC)
+  // SORT handled by backend
   const sort = typeof params.sort === "string" ? params.sort : "latest";
-  if (sort === "price_low")
-    gigs = [...gigs].sort((a, b) => (a?.price ?? 0) - (b?.price ?? 0));
-  if (sort === "price_high")
-    gigs = [...gigs].sort((a, b) => (b?.price ?? 0) - (a?.price ?? 0));
 
   // Pastikan shape aman buat GigCard (biar ga error seller undefined)
   gigs = gigs.map((g) => ({
@@ -53,7 +58,7 @@ async function getData(params: SearchParams) {
     },
   }));
 
-  return { gigs, categories, sort };
+  return { gigs, categories, sort, meta };
 }
 
 export default async function SearchPage({
@@ -62,7 +67,15 @@ export default async function SearchPage({
   searchParams: Promise<SearchParams>;
 }) {
   const params = await searchParams;
-  const { gigs, categories, sort } = await getData(params);
+  const { gigs, categories, sort, meta } = await getData(params);
+
+  // Filter params to pass to Pagination
+  const queryParams: Record<string, string> = {};
+  if (params.q) queryParams.q = params.q;
+  if (params.cat) queryParams.cat = params.cat;
+  if (params.min) queryParams.min = params.min;
+  if (params.max) queryParams.max = params.max;
+  if (params.sort) queryParams.sort = params.sort;
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8">
@@ -109,6 +122,13 @@ export default async function SearchPage({
               ))}
             </div>
           )}
+
+          <Pagination
+            currentPage={meta.page}
+            totalPages={meta.total_pages}
+            baseUrl="/search"
+            queryParams={queryParams}
+          />
         </section>
       </div>
     </div>

@@ -80,6 +80,9 @@ export default function FiltersClient({
     if (sort && sort !== "latest") qs.set("sort", sort);
     else qs.delete("sort");
 
+    // Fix: Always reset to page 1 when filtering
+    qs.delete("page");
+
     const query = qs.toString();
     return query ? `${pathname}?${query}` : pathname;
   }, [sp, pathname, q, cat, minDisplay, maxDisplay, sort]);
@@ -97,6 +100,7 @@ export default function FiltersClient({
     setMinDisplay("");
     setMaxDisplay("");
     setSort("latest");
+    // Clear all params but keep pathname
     router.replace(pathname, { scroll: false });
   };
 
@@ -150,11 +154,10 @@ export default function FiltersClient({
                     <button
                       key={c}
                       onClick={() => setCat(active ? "" : c)}
-                      className={`rounded-full border px-3 py-1.5 text-xs font-semibold ${
-                        active
-                          ? "bg-black text-white border-black"
-                          : "text-black/70 hover:bg-black/5"
-                      }`}
+                      className={`rounded-full border px-3 py-1.5 text-xs font-semibold ${active
+                        ? "bg-black text-white border-black"
+                        : "text-black/70 hover:bg-black/5"
+                        }`}
                     >
                       {c}
                     </button>
@@ -218,15 +221,17 @@ export default function FiltersClient({
                   if (next) qs.set("cat", next);
                   else qs.delete("cat");
 
+                  // Also reset page
+                  qs.delete("page");
+
                   router.replace(`${pathname}?${qs.toString()}`, {
                     scroll: false,
                   });
                 }}
-                className={`rounded-full border px-3 py-1.5 text-xs font-semibold ${
-                  active
-                    ? "bg-black text-white border-black"
-                    : "text-black/70 hover:bg-black/5"
-                }`}
+                className={`rounded-full border px-3 py-1.5 text-xs font-semibold ${active
+                  ? "bg-black text-white border-black"
+                  : "text-black/70 hover:bg-black/5"
+                  }`}
               >
                 {c}
               </button>

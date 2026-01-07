@@ -9,7 +9,8 @@ export default function ConditionalNavbar() {
   // hide navbar for any route under /auth
   if (pathname.startsWith("/auth")) return null;
 
-  if (pathname.startsWith("/freelancer/dashboard")) return null;
+  // Hide for freelancer pages (they have their own layout/navbar)
+  if (pathname.startsWith("/freelancer")) return null;
 
   return <Navbar />;
 }

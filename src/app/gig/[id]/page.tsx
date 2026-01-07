@@ -16,11 +16,25 @@ async function getGigDetail(id: string) {
   return json.data;
 }
 
+async function getProductReviews(id: string) {
+  try {
+    const res = await fetch(`${API_BASE}/products/${id}/reviews`, {
+      cache: "no-store",
+    });
+    if (!res.ok) return [];
+    const json = await res.json();
+    return json.data || [];
+  } catch (error) {
+    return [];
+  }
+}
+
 export default async function GigDetail(props: {
   params: Promise<{ id: string }>;
 }) {
   const { id } = await props.params;
   const gig = await getGigDetail(id);
+  const reviews = await getProductReviews(id);
 
   // Parse packages data
   const packages = gig.packages || {};
@@ -88,8 +102,11 @@ export default async function GigDetail(props: {
                 <div className="text-xs font-semibold text-black/50">
                   Rating
                 </div>
-                <div className="mt-1 text-xl font-extrabold">
-                  ⭐ {gig.rating ?? "5.0"}
+                <div className="mt-1 text-xl font-extrabold flex items-center gap-1">
+                  <span>⭐ {Number(gig.rating || 0).toFixed(1)}</span>
+                  <span className="text-sm text-black/40 font-normal">
+                    ({gig.review_count || 0})
+                  </span>
                 </div>
               </div>
 
@@ -97,8 +114,8 @@ export default async function GigDetail(props: {
                 <div className="text-xs font-semibold text-black/50">
                   Terjual
                 </div>
-                <div className="mt-1 text-xl font-extrabold">
-                  {gig.sold ?? 0}+
+                <div className="text-sm text-gray-500">
+                  • {gig.sold || 0} Terjual
                 </div>
               </div>
 
@@ -117,6 +134,7 @@ export default async function GigDetail(props: {
                 {gig.visibility_description || "Deskripsi belum tersedia."}
               </p>
             </div>
+
           </div>
 
           {/* Packages */}
@@ -292,6 +310,59 @@ export default async function GigDetail(props: {
               </div>
             </div>
           )}
+
+          {/* Reviews Section */}
+          <div className="rounded-3xl border bg-white p-6">
+            <h2 className="text-xl font-extrabold mb-4">
+              Ulasan Pembeli ({reviews?.length || 0})
+            </h2>
+
+            <div className="space-y-4">
+              {!reviews || reviews.length === 0 ? (
+                <div className="rounded-xl bg-black/5 p-6 text-center text-black/60">
+                  Belum ada ulasan untuk layanan ini.
+                </div>
+              ) : (
+                reviews.map((review: any) => (
+                  <div
+                    key={review.id}
+                    className="rounded-2xl border bg-gray-50 p-4"
+                  >
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-black/10 font-bold text-black/40">
+                          {review.reviewer?.name?.charAt(0) || "?"}
+                        </div>
+                        <div>
+                          <div className="text-sm font-bold">
+                            {review.reviewer?.name || "Pengguna"}
+                          </div>
+                          <div className="text-xs text-black/40">
+                            {new Date(review.created_at).toLocaleDateString(
+                              "id-ID",
+                              {
+                                year: "numeric",
+                                month: "long",
+                                day: "numeric",
+                              }
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center rounded-lg bg-orange-100 px-2 py-1 text-xs font-bold text-orange-700">
+                        ⭐ {review.rating}
+                      </div>
+                    </div>
+                    {review.comment && (
+                      <div className="mt-3 text-sm leading-relaxed text-black/70">
+                        {review.comment}
+                      </div>
+                    )}
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
         </div>
 
         {/* ================= SIDEBAR ================= */}
@@ -336,9 +407,8 @@ export default async function GigDetail(props: {
           </Link>
 
           <Link
-            href={`/chat?seller_id=${gig.freelancer?.id}${
-              gig.id ? `&product_id=${gig.id}` : ""
-            }`}
+            href={`/chat?seller_id=${gig.freelancer?.id}${gig.id ? `&product_id=${gig.id}` : ""
+              }`}
             className="mt-3 block w-full rounded-2xl border bg-white px-4 py-3 text-center text-sm font-semibold hover:bg-black/5"
           >
             Chat Freelancer

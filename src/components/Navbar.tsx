@@ -176,16 +176,24 @@ export default function Navbar() {
           {/* Desktop Search */}
           <div className="hidden md:block flex-1 mx-3 lg:mx-4">
             <div className="relative max-w-2xl group">
-              <Input
-                placeholder="Cari layanan… (olah data, proofreading, PPT sidang)"
-                className="pr-24 text-sm border-primary/10 focus:border-primary/40 focus:ring-primary/20 transition-all rounded-xl"
-              />
-              <Link
-                href="/search"
-                className="absolute right-1.5 top-1/2 -translate-y-1/2 rounded-lg lg:rounded-xl bg-primary px-3 lg:px-4 py-1.5 lg:py-2 text-xs lg:text-sm font-semibold text-white hover:bg-primary/90 transition-colors shadow-sm"
-              >
-                Cari
-              </Link>
+              <form onSubmit={(e) => {
+                e.preventDefault();
+                // @ts-ignore
+                const val = e.target.elements.q.value;
+                router.push(`/search?q=${encodeURIComponent(val)}`);
+              }}>
+                <Input
+                  name="q"
+                  placeholder="Cari layanan… (olah data, proofreading, PPT sidang)"
+                  className="pr-24 text-sm border-primary/10 focus:border-primary/40 focus:ring-primary/20 transition-all rounded-xl"
+                />
+                <button
+                  type="submit"
+                  className="absolute right-1.5 top-1/2 -translate-y-1/2 rounded-lg lg:rounded-xl bg-primary px-3 lg:px-4 py-1.5 lg:py-2 text-xs lg:text-sm font-semibold text-white hover:bg-primary/90 transition-colors shadow-sm"
+                >
+                  Cari
+                </button>
+              </form>
             </div>
           </div>
 
@@ -390,15 +398,26 @@ export default function Navbar() {
 
         {/* Mobile Search */}
         <div className="md:hidden pb-2 px-1">
-          <div className="relative group">
-            <Input placeholder="Cari layanan…" className="pr-20 text-xs border-primary/10 focus:border-primary/40 focus:ring-primary/20 rounded-xl" />
-            <Link
-              href="/search"
-              className="absolute right-1 top-1/2 -translate-y-1/2 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-white shadow-sm"
-            >
-              Cari
-            </Link>
-          </div>
+          <form onSubmit={(e) => {
+            e.preventDefault();
+            // @ts-ignore
+            const val = e.target.elements.qMobile.value;
+            router.push(`/search?q=${encodeURIComponent(val)}`);
+          }}>
+            <div className="relative group">
+              <Input
+                name="qMobile"
+                placeholder="Cari layanan…"
+                className="pr-20 text-xs border-primary/10 focus:border-primary/40 focus:ring-primary/20 rounded-xl"
+              />
+              <button
+                type="submit"
+                className="absolute right-1 top-1/2 -translate-y-1/2 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-white shadow-sm"
+              >
+                Cari
+              </button>
+            </div>
+          </form>
         </div>
 
         {/* Mobile dropdown */}
